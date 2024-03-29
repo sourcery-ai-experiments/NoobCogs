@@ -95,11 +95,11 @@ class HYBRIDS:
             await DonationLoggerSetupView(cog).start(ctx)
 
     @classmethod
-    async def hybrid_resetmember(
+    async def hybrid_resetuser(
         cls,
         cog: "DonationLogger",
         obj: Union[commands.Context, discord.Interaction[Red]],
-        member: discord.Member,
+        user: Union[discord.User, discord.Member],
         bank_name: str = None,
     ):
         if isinstance(obj, discord.Interaction):
@@ -122,32 +122,32 @@ class HYBRIDS:
                     ephemeral=True,
                 )
         if not bank_name:
-            act = f"Successfully cleared all bank donations from **{member.name}**."
-            conf = f"Are you sure you want to erase all bank donations from **{member.name}**?"
+            act = f"Successfully cleared all bank donations from **{user.name}**."
+            conf = f"Are you sure you want to erase all bank donations from **{user.name}**?"
             view = nu.NoobConfirmation()
             await view.start(obj, act, content=conf)
             await view.wait()
             if view.value:
                 async with cog.config.guild(obj.guild).banks() as banks:
                     for bank in banks.values():
-                        bank["donators"].setdefault(str(member.id), 0)
-                        bank["donators"][str(member.id)] = 0
+                        bank["donators"].setdefault(str(user.id), 0)
+                        bank["donators"][str(user.id)] = 0
             return
-        act = f"Successfully cleared **{bank_name.title()}** donations from **{member.name}**."
-        conf = f"Are you sure you want to clear **{bank_name.title()}** donations from **{member.name}**"
+        act = f"Successfully cleared **{bank_name.title()}** donations from **{user.name}**."
+        conf = f"Are you sure you want to clear **{bank_name.title()}** donations from **{user.name}**"
         view = nu.NoobConfirmation()
         await view.start(obj, act, content=conf)
         await view.wait()
         if view.value:
             async with cog.config.guild(obj.guild).banks() as banks:
                 donations = banks[bank_name.lower()]["donators"].setdefault(
-                    str(member.id), 0
+                    str(user.id), 0
                 )
                 if donations == 0:
                     return await cls.hybrid_send(
                         obj, content="This member has 0 donation balance for this bank."
                     )
-                banks[bank_name.lower()]["donators"][str(member.id)] = 0
+                banks[bank_name.lower()]["donators"][str(user.id)] = 0
 
     @classmethod
     async def hybrid_balance(

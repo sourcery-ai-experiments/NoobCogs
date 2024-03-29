@@ -5,7 +5,7 @@ import logging
 from redbot.core.bot import app_commands, commands, Config, Red
 from redbot.core.utils import chat_formatting as cf, mod
 
-from typing import Dict, Literal, List, Optional
+from typing import Dict, Literal, List, Optional, Union
 
 from .checks import is_a_dono_manager_or_higher, is_setup_done
 from .converters import AmountConverter, BankConverter, DLEmojiConverter
@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.3.5"
+    __version__ = "1.4.0"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -307,23 +307,23 @@ class DonationLogger(commands.Cog):
         """
         await HYBRIDS.hybrid_setup(self, context)
 
-    @donationlogger.command(name="resetmember")
+    @donationlogger.command(name="resetuser")
     @is_setup_done()
     @is_a_dono_manager_or_higher()
-    async def donationlogger_resetmember(
+    async def donationlogger_resetuser(
         self,
         context: commands.Context,
         bank_name: Optional[BankConverter] = None,
-        member: discord.Member = None,
+        user: Union[discord.User, discord.Member] = None,
     ):
         """
-        Reset a member's specific bank or all bank donations.
+        Reset a user's specific bank or all bank donations.
         """
-        if not member:
-            member = context.author
-        if member.bot:
+        if not user:
+            user = context.author
+        if user.bot:
             return await context.send(content="Bots are not allowed.")
-        await HYBRIDS.hybrid_resetmember(self, context, member, bank_name)
+        await HYBRIDS.hybrid_resetuser(self, context, user, bank_name)
 
     @donationlogger.command(name="balance", aliases=["bal", "c", "check"])
     @is_setup_done()
@@ -910,18 +910,18 @@ class DonationLogger(commands.Cog):
         await HYBRIDS.hybrid_setup(self, interaction)
 
     @slash_donologger.command(
-        name="resetmember",
-        description="Reset a member's specific bank or all bank donations.",
+        name="resetuser",
+        description="Reset a user's specific bank or all bank donations.",
     )
     @app_commands.describe(
         bank_name="The name of the registered bank.",
-        member="The member that you want to reset donations. (leave blank to choose yourself)",
+        user="The member that you want to reset donations. (leave blank to choose yourself)",
     )
-    async def slash_donationlogger_resetmember(
+    async def slash_donationlogger_resetuser(
         self,
         interaction: discord.Interaction[Red],
         bank_name: Optional[app_commands.Transform[str, BankConverter]],
-        member: Optional[discord.Member],
+        user: Optional[Union[discord.User, discord.Member]],
     ):
         """_summary_
 
@@ -930,9 +930,9 @@ class DonationLogger(commands.Cog):
             bank_name (Optional[app_commands.Transform[str, BankConverter]]): _description_
             member (Optional[discord.Member]): _description_
         """
-        if not member:
-            member = interaction.user
-        if member.bot:
+        if not user:
+            user = interaction.user
+        if user.bot:
             return await interaction.response.send_message(
                 content="Bots are not allowed."
             )
@@ -943,7 +943,7 @@ class DonationLogger(commands.Cog):
                 )
             else:
                 return await interaction.response.send_message(content=bank_name[0])
-        await HYBRIDS.hybrid_resetmember(self, interaction, member, bank_name)
+        await HYBRIDS.hybrid_resetuser(self, interaction, user, bank_name)
 
     @slash_donologger.command(
         name="balance", description="Check your or some one else's donation balance."
