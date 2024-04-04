@@ -35,7 +35,7 @@ class NoobTools(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.NoobTools")
         self.old_get_audit_reason = mod.get_audit_reason
 
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
     __author__ = ["NoobInDaHause"]
     __docs__ = (
         "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/noobtools/README.md"
@@ -189,7 +189,7 @@ class NoobTools(commands.Cog):
             return await context.send_help()
 
         channel = channel or context.channel
-        roles = list(set(roles))
+        roles = list(dict.fromkeys(roles).keys())
 
         if len(roles) > 15:
             return await context.send(
