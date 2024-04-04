@@ -7,11 +7,15 @@ from typing import Union
 
 
 class ModifiedFuzzyRole(nu.NoobFuzzyRole):
+    def __init__(self, role: discord.Role):
+        super().__init__(role=role)
+
+    @classmethod
     async def convert(
-        self, ctx: commands.Context, argument: str
+        cls, ctx: commands.Context, argument: str
     ) -> Union[discord.Role, str]:
         arg = argument.lower().strip()
         if arg in {"@here", "here", "@everyone", "everyone"}:
             return arg.replace("@", "")
-        else:
-            return await super().convert(ctx, argument)
+        role = await super().convert(ctx, argument)
+        return cls(role=role)

@@ -35,7 +35,7 @@ class NoobTools(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.NoobTools")
         self.old_get_audit_reason = mod.get_audit_reason
 
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
     __author__ = ["NoobInDaHause"]
     __docs__ = (
         "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/noobtools/README.md"
