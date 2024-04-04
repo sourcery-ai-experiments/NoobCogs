@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -597,7 +597,7 @@ class DonationLogger(commands.Cog):
 
     @donationloggerset_bank_amountroles.command(name="set", aliases=["add"])
     async def donationloggerset_bank_amountroles_set(
-        self, context: commands.Context, bank_name: BankConverter, amountroles: str
+        self, context: commands.Context, bank_name: BankConverter, *, amountroles: str
     ):
         """
         Set roles milestone to an amount.
