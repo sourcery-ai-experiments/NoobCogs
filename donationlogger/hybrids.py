@@ -248,7 +248,7 @@ class HYBRIDS:
             )
             e = (
                 "➡️ "
-                if member and member.id == (getattr(obj, "author", obj.user)).id
+                if member and member.id == (getattr(obj, "user", obj.author)).id
                 else ""
             )
             output_list.append(
