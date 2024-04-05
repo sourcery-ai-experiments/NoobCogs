@@ -306,6 +306,8 @@ class HYBRIDS:
         for index, (k, v) in enumerate(sorted_donors.items(), 1):
             if index > top:
                 break
+            if v < 0:
+                break
             member = obj.guild.get_member(int(k))
             mem = f"{member.name}" if member else f"[Member not found in guild] ({k})"
             embed.add_field(
