@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.5.1"
+    __version__ = "1.5.2"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -130,7 +130,7 @@ class DonationLogger(commands.Cog):
             donos = v["donators"].get(str(user_id), 0)
             _dict[k] = {"donations": donos, "emoji": v["emoji"]}
 
-        new_dict = dict(filter(lambda x: x[1], _dict.items()))
+        new_dict = dict(filter(lambda x: x[1]["donations"], _dict.items()))
         if not new_dict:
             return discord.Embed(
                 title=f"[Member not found in guild] ({user_id})",
