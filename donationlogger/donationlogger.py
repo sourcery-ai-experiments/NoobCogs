@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -143,7 +143,7 @@ class DonationLogger(commands.Cog):
         for key, value in _dict.items():
             donos = value['donations']
             final[key] = f"{value['emoji']} {cf.humanize_number(donos)}"
-            final_overall.append(donations)
+            final_overall.append(donos)
 
         overall = sum(final_overall)
         embed = discord.Embed(
