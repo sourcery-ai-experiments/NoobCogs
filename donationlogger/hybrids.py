@@ -154,7 +154,7 @@ class HYBRIDS:
         cls,
         cog: "DonationLogger",
         obj: Union[commands.Context, discord.Interaction[Red]],
-        member: discord.Member,
+        member: Union[discord.Member, discord.User],
         bank_name: str = None,
     ):
         if (
@@ -166,14 +166,19 @@ class HYBRIDS:
                 content='I require the "Embed Links" permission to run this command.',
                 ephemeral=True,
             )
+        user_str = (
+            member.name
+            if isinstance(member, discord.Member)
+            else f"[Member not found in guild] ({member.id})"
+        )
         if bank_name:
             async with cog.config.guild(obj.guild).banks() as banks:
                 bank = banks[bank_name.lower()]
-                donations = bank["donators"].setdefault(str(member.id), 0)
                 if bank["hidden"]:
                     return await cls.hybrid_send(obj, content="This bank is hidden")
+                donations = bank["donators"].setdefault(str(member.id), 0)
                 embed = discord.Embed(
-                    title=f"{member.name} ({member.id})",
+                    title=user_str,
                     description=(
                         f"Bank: {bank_name.title()}\n"
                         f"Total amount donated: {bank['emoji']} {cf.humanize_number(donations)}"
@@ -181,7 +186,8 @@ class HYBRIDS:
                     timestamp=discord.utils.utcnow(),
                     colour=member.colour,
                 )
-                embed.set_thumbnail(url=nu.is_have_avatar(member))
+                if isinstance(member, discord.Member):
+                    embed.set_thumbnail(url=nu.is_have_avatar(member))
                 embed.set_footer(
                     text=f"{obj.guild.name} admires your donations!",
                     icon_url=nu.is_have_avatar(obj.guild),

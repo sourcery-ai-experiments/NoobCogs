@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.4.4"
+    __version__ = "1.4.5"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -104,7 +104,7 @@ class DonationLogger(commands.Cog):
         )
 
     async def get_all_bank_member_dono(
-        self, guild: discord.Guild, member: discord.Member
+        self, guild: discord.Guild, member: Union[discord.Member, discord.User]
     ) -> discord.Embed:
         final: Dict[str, str] = {}
         final_overall = []
@@ -122,9 +122,13 @@ class DonationLogger(commands.Cog):
             timestamp=discord.utils.utcnow(),
             colour=member.colour,
         )
-        embed.set_author(
-            name=f"{member} ({member.id})", icon_url=nu.is_have_avatar(member)
-        )
+        if isinstance(member, discord.Member):
+            name = member.name
+            icurl = nu.is_have_avatar(member)
+        else:
+            name = f"[Member not found in guild] ({member.id})"
+            icurl = None
+        embed.set_author(name=name, icon_url=icurl)
         embed.set_footer(
             text=f"{guild.name} admires your donations!",
             icon_url=nu.is_have_avatar(guild),
@@ -330,7 +334,7 @@ class DonationLogger(commands.Cog):
     async def donationlogger_check(
         self,
         context: commands.Context,
-        member: Optional[discord.Member] = None,
+        member: Optional[Union[discord.Member, discord.User]] = None,
         bank_name: BankConverter = None,
     ):
         """
@@ -366,7 +370,7 @@ class DonationLogger(commands.Cog):
         context: commands.Context,
         bank_name: BankConverter,
         top: Optional[int] = 10,
-        show_left_users: bool = True,
+        show_left_users: bool = False,
     ):
         """
         See who has donated the most from a bank.
@@ -962,7 +966,7 @@ class DonationLogger(commands.Cog):
     async def slash_donationlogger_balance(
         self,
         interaction: discord.Interaction[Red],
-        member: Optional[discord.Member],
+        member: Optional[Union[discord.Member, discord.User]],
         bank_name: Optional[app_commands.Transform[str, BankConverter]],
     ):
         """_summary_
@@ -1047,7 +1051,7 @@ class DonationLogger(commands.Cog):
         interaction: discord.Interaction[Red],
         bank_name: app_commands.Transform[str, BankConverter],
         top: app_commands.Range[int, 1, 25] = 10,
-        show_left_users: Optional[bool] = True,
+        show_left_users: Optional[bool] = False,
     ):
         """_summary_
 
