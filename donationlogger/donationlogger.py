@@ -8,7 +8,7 @@ from redbot.core.utils import chat_formatting as cf, mod
 from typing import Dict, Literal, List, Optional, Union
 
 from .checks import is_a_dono_manager_or_higher, is_setup_done
-from .converters import AmountConverter, BankConverter, DLEmojiConverter
+from .converters import AmountConverter, BankConverter, DLEmojiConverter, MemberOrUserConverter
 from .exceptions import MoreThanThreeRoles
 from .hybrids import HYBRIDS
 from .utilities import verify_amount_roles
@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.5.2"
+    __version__ = "1.6.0"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -391,7 +391,7 @@ class DonationLogger(commands.Cog):
     async def donationlogger_check(
         self,
         context: commands.Context,
-        member: Optional[Union[discord.Member, discord.User]] = None,
+        member: Optional[MemberOrUserConverter] = None,
         bank_name: BankConverter = None,
     ):
         """
@@ -1027,7 +1027,7 @@ class DonationLogger(commands.Cog):
     async def slash_donationlogger_balance(
         self,
         interaction: discord.Interaction[Red],
-        member: Optional[Union[discord.Member, discord.User]],
+        member: Optional[MemberOrUserConverter],
         bank_name: Optional[app_commands.Transform[str, BankConverter]],
     ):
         """_summary_

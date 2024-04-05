@@ -4,7 +4,7 @@ import re
 from redbot.core.bot import app_commands, commands, Red
 
 from noobutils import NoobEmojiConverter
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Union
 
 from .checks import check_if_is_a_dono_manager_or_higher, check_if_setup_done
 from .exceptions import BankConversionFailure, AmountConversionFailure
@@ -67,6 +67,27 @@ class DLEmojiConverter(NoobEmojiConverter):
     async def convert(self, ctx: commands.Context, argument: str):
         argument = argument.strip()
         return argument if argument == "⏣" else await super().convert(ctx, argument)
+
+
+class MemberOrUserConverter(app_commands.Transformer):
+    @classmethod
+    async def convert(
+        cls, ctx: commands.Context, argument: str
+    ) -> Union[discord.Member, discord.User]:
+        try:
+            return await commands.MemberConverter().convert(ctx, argument)
+        except commands.MemberNotFound:
+            try:
+                return await commands.UserConverter().convert(ctx, argument)
+            except commands.UserNotFound as e:
+                raise commands.BadArgument(f"Member or User '{argument}' not found.") from e
+
+    @classmethod
+    async def transform(
+        cls, interaction: discord.Interaction[Red], value: str
+    ) -> Union[discord.Member, discord.User]:
+        ctx = await interaction.client.get_context(interaction)
+        return await cls.convert(ctx, value)
 
 
 class BankConverter(app_commands.Transformer):
