@@ -130,8 +130,9 @@ class HYBRIDS:
             if view.value:
                 async with cog.config.guild(obj.guild).banks() as banks:
                     for bank in banks.values():
-                        bank["donators"].setdefault(str(user.id), 0)
-                        bank["donators"][str(user.id)] = 0
+                        donos = bank["donators"].get(str(user.id))
+                        if donos is not None:
+                            del bank["donators"][str(user.id)]
             return
         act = f"Successfully cleared **{bank_name.title()}** donations from **{user.name}**."
         conf = f"Are you sure you want to clear **{bank_name.title()}** donations from **{user.name}**"
@@ -140,14 +141,9 @@ class HYBRIDS:
         await view.wait()
         if view.value:
             async with cog.config.guild(obj.guild).banks() as banks:
-                donations = banks[bank_name.lower()]["donators"].setdefault(
-                    str(user.id), 0
-                )
-                if donations == 0:
-                    return await cls.hybrid_send(
-                        obj, content="This member has 0 donation balance for this bank."
-                    )
-                banks[bank_name.lower()]["donators"][str(user.id)] = 0
+                donations = banks[bank_name.lower()]["donators"].get(str(user.id))
+                if donations is not None:
+                    del banks[bank_name.lower()]["donators"][str(user.id)]
 
     @classmethod
     async def hybrid_balance(
@@ -169,9 +165,9 @@ class HYBRIDS:
         if bank_name:
             async with cog.config.guild(obj.guild).banks() as banks:
                 bank = banks[bank_name.lower()]
-                donations = bank["donators"].setdefault(str(member.id), 0)
                 if bank["hidden"]:
                     return await cls.hybrid_send(obj, content="This bank is hidden")
+                donations = bank["donators"].get(str(member.id), 0)
                 embed = discord.Embed(
                     title=f"{member.name} ({member.id})",
                     description=(
@@ -456,16 +452,16 @@ class HYBRIDS:
             member_id = str(member.id)
             if bank["hidden"]:
                 return await cls.hybrid_send(obj, content="This bank is hidden.")
-            donators.setdefault(member_id, 0)
-            if donators[member_id] == 0:
+            d = donators.get(member_id)
+            if d == 0 or d is None:
                 return await cls.hybrid_send(
                     obj, content="This member has 0 donation balance for this bank."
                 )
             donators[member_id] -= amount
             updated1 = donators[member_id]
             if updated1 < 0:
-                donators[member_id] = 0
-            updated2 = donators[member_id]
+                del donators[member_id]
+            updated2 = donators.get(member_id, 0)
             previous = updated1 + amount
             donated = cf.humanize_number(amount)
             total = cf.humanize_number(updated2)

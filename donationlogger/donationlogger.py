@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.6.1"
+    __version__ = "1.6.2"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -173,7 +173,7 @@ class DonationLogger(commands.Cog):
             for k, v in banks.items():
                 if v["hidden"]:
                     continue
-                donations = v["donators"].setdefault(str(member.id), 0)
+                donations = v["donators"].get(str(member.id), 0)
                 final[k] = f"{v['emoji']} {cf.humanize_number(donations)}"
                 final_overall.append(donations)
 
