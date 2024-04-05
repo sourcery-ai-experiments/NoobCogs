@@ -293,7 +293,8 @@ class HYBRIDS:
             return await cls.hybrid_send(obj, content="This bank is hidden.")
         donors = banks[bank_name.lower()]["donators"]
         emoji = banks[bank_name.lower()]["emoji"]
-        sorted_donors = dict(sorted(donors.items(), key=lambda m: m[1], reverse=True))
+        filtered_donors = {i: j for i, j in donors.items() if j > 0}
+        sorted_donors = dict(sorted(filtered_donors.items(), key=lambda m: m[1], reverse=True))
         embed = discord.Embed(
             title=f"Top {top} donators for [{bank_name.title()}]",
             colour=random.randint(0, 0xFFFFFF),
@@ -305,8 +306,6 @@ class HYBRIDS:
             embed.description = "It seems no one has donated from this bank yet."
         for index, (k, v) in enumerate(sorted_donors.items(), 1):
             if index > top:
-                break
-            if v < 0:
                 break
             member = obj.guild.get_member(int(k))
             mem = f"{member.name}" if member else f"[Member not found in guild] ({k})"
