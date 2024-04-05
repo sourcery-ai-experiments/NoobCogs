@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.4.5"
+    __version__ = "1.5.0"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -103,8 +103,69 @@ class DonationLogger(commands.Cog):
             footer_icon=nu.is_have_avatar(context.guild),
         )
 
+    async def get_user_balance(
+        self, guild: discord.Guild, user_id: int, bank_name: str = None
+    ) -> discord.Embed:
+        banks = await self.config.guild(guild).banks()
+        if bank_name:
+            bank = banks[bank_name.lower()]
+            donations = bank["donators"].get(str(user_id))
+            embed = discord.Embed(
+                title=f"[Member not found in guild] ({user_id})",
+                timestamp=discord.utils.utcnow(),
+            )
+            if donations is not None:
+                embed.description = (
+                    f"Bank: {bank_name.title()}\n"
+                    f"Total amount donated: {bank['emoji']} {cf.humanize_number(donations)}"
+                )
+            else:
+                embed.description = "This uesr has no data in this guild."
+            return embed
+
+        _dict: Dict[str, Dict[str, Union[str, int]]] = {}
+        for k, v in banks.items():
+            if v["hidden"]:
+                continue
+            donos = v["donators"].get(str(user_id), 0)
+            _dict[k] = {"donations": donos, "emoji": v["emoji"]}
+
+        new_dict = dict(filter(lambda x: x[1], _dict.items()))
+        if not new_dict:
+            return discord.Embed(
+                title=f"[Member not found in guild] ({user_id})",
+                description="This user has no data in this guild.",
+                timestamp=discord.utils.utcnow(),
+            )
+
+        final: Dict[str, str] = {}
+        final_overall = []
+        for key, value in _dict.items():
+            donos = value['donations']
+            final[key] = f"{value['emoji']} {cf.humanize_number(donos)}"
+            final_overall.append(donations)
+
+        overall = sum(final_overall)
+        embed = discord.Embed(
+            description=f"Overall combined bank donation amount: {cf.humanize_number(overall)}",
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.set_author(name=f"[Member not found in guild] ({user_id})")
+        embed.set_footer(
+            text=f"{guild.name} admires your donations!",
+            icon_url=nu.is_have_avatar(guild),
+        )
+        if final:
+            for k, v in final.items():
+                embed.add_field(name=k.title(), value=v, inline=True)
+        else:
+            embed.description = (
+                "There are no banks registered yet, or banks are hidden."
+            )
+        return embed
+
     async def get_all_bank_member_dono(
-        self, guild: discord.Guild, member: Union[discord.Member, discord.User]
+        self, guild: discord.Guild, member: discord.Member
     ) -> discord.Embed:
         final: Dict[str, str] = {}
         final_overall = []
@@ -122,13 +183,9 @@ class DonationLogger(commands.Cog):
             timestamp=discord.utils.utcnow(),
             colour=member.colour,
         )
-        if isinstance(member, discord.Member):
-            name = member.name
-            icurl = nu.is_have_avatar(member)
-        else:
-            name = f"[Member not found in guild] ({member.id})"
-            icurl = None
-        embed.set_author(name=name, icon_url=icurl)
+        embed.set_author(
+            name=f"{member} ({member.id})", icon_url=nu.is_have_avatar(member)
+        )
         embed.set_footer(
             text=f"{guild.name} admires your donations!",
             icon_url=nu.is_have_avatar(guild),
@@ -347,7 +404,11 @@ class DonationLogger(commands.Cog):
                 content="Bots are prohibited from donations. (For obvious reasons)"
             )
 
-        await HYBRIDS.hybrid_balance(self, context, member, bank_name)
+        if isinstance(member, discord.Member):
+            await HYBRIDS.hybrid_balance(self, context, member, bank_name)
+        else:
+            embed = await self.get_user_balance(context.guild, member.id, bank_name)
+            await context.send(embed=embed)
 
     @donationlogger.command(name="donationcheck", aliases=["dc"])
     @is_setup_done()
@@ -989,7 +1050,11 @@ class DonationLogger(commands.Cog):
                 )
             else:
                 return await interaction.response.send_message(content=bank_name[0])
-        await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
+        if isinstance(member, discord.Member):
+            await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
+        else:
+            embed = await self.get_user_balance(interaction.guild, member.id, bank_name)
+            await interaction.response.send_message(embed=embed)
 
     @slash_donologger.command(
         name="donationcheck",
