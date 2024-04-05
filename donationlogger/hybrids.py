@@ -278,6 +278,7 @@ class HYBRIDS:
         obj: Union[commands.Context, discord.Interaction[Red]],
         bank_name: str,
         top: int,
+        show_left_users: bool,
     ):
         if (
             isinstance(obj, discord.Interaction)
@@ -293,8 +294,19 @@ class HYBRIDS:
             return await cls.hybrid_send(obj, content="This bank is hidden.")
         donors = banks[bank_name.lower()]["donators"]
         emoji = banks[bank_name.lower()]["emoji"]
-        filtered_donors = {i: j for i, j in donors.items() if j > 0}
-        sorted_donors = dict(sorted(filtered_donors.items(), key=lambda m: m[1], reverse=True))
+        filtered_donors = {}
+        for i, j in donors.items():
+            if j <= 0:
+                continue
+            memb = obj.guild.get_member(int(i))
+            if not memb and not show_left_users:
+                continue
+            member = memb.name if memb else f"[Member not found in guild] ({i})"
+            filtered_donors[member] = j
+
+        sorted_donors = dict(
+            sorted(filtered_donors.items(), key=lambda m: m[1], reverse=True)
+        )
         embed = discord.Embed(
             title=f"Top {top} donators for [{bank_name.title()}]",
             colour=random.randint(0, 0xFFFFFF),
@@ -307,10 +319,8 @@ class HYBRIDS:
         for index, (k, v) in enumerate(sorted_donors.items(), 1):
             if index > top:
                 break
-            member = obj.guild.get_member(int(k))
-            mem = f"{member.name}" if member else f"[Member not found in guild] ({k})"
             embed.add_field(
-                name=f"{index}. {mem}",
+                name=f"{index}. {k}",
                 value=f"{emoji} {cf.humanize_number(v)}",
                 inline=False,
             )
@@ -361,7 +371,7 @@ class HYBRIDS:
                 return await cls.hybrid_send(
                     obj,
                     ephemeral=True,
-                    content="The amount you provided is way too high, consider adding something reasonable."
+                    content="The amount you provided is way too high, consider adding something reasonable.",
                 )
             bank["donators"].setdefault(str(member.id), 0)
             bank["donators"][str(member.id)] += amount
@@ -382,7 +392,7 @@ class HYBRIDS:
                 title="Successfully Added",
                 description=rep,
                 colour=member.colour,
-                timestamp=discord.utils.utcnow()
+                timestamp=discord.utils.utcnow(),
             )
             if multi:
                 embed.set_footer(text=f"Donation Multiplier: x{multi}")
@@ -390,7 +400,9 @@ class HYBRIDS:
                 embed.add_field(
                     name="Added Donation Roles:", value=humanized_roles, inline=False
                 )
-            await TotalDonoView(cog).start(ctx, member, content=member.mention, embed=embed)
+            await TotalDonoView(cog).start(
+                ctx, member, content=member.mention, embed=embed
+            )
             await cog.send_to_log_channel(
                 ctx,
                 "add",
@@ -470,11 +482,15 @@ class HYBRIDS:
                 title="Successfully Removed",
                 description=rep,
                 colour=member.colour,
-                timestamp=discord.utils.utcnow()
+                timestamp=discord.utils.utcnow(),
             )
             if humanized_roles:
-                embed.add_field(name="Removed Donation Roles:", value=humanized_roles, inline=False)
-            await TotalDonoView(cog).start(ctx, member, content=member.mention, embed=embed)
+                embed.add_field(
+                    name="Removed Donation Roles:", value=humanized_roles, inline=False
+                )
+            await TotalDonoView(cog).start(
+                ctx, member, content=member.mention, embed=embed
+            )
             await cog.send_to_log_channel(
                 ctx,
                 "remove",
@@ -545,13 +561,17 @@ class HYBRIDS:
                 title="Successfully Set",
                 description=rep,
                 colour=member.colour,
-                timestamp=discord.utils.utcnow()
+                timestamp=discord.utils.utcnow(),
             )
             if humanized_roles:
                 embed.add_field(
-                    name="Added/Removed Donation Roles:", value=humanized_roles, inline=False
+                    name="Added/Removed Donation Roles:",
+                    value=humanized_roles,
+                    inline=False,
                 )
-            await TotalDonoView(cog).start(ctx, member, content=member.mention, embed=embed)
+            await TotalDonoView(cog).start(
+                ctx, member, content=member.mention, embed=embed
+            )
             await cog.send_to_log_channel(
                 ctx,
                 "set",

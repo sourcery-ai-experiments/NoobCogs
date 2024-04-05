@@ -39,7 +39,7 @@ class DonationLogger(commands.Cog):
         self.log = logging.getLogger("red.NoobCogs.DonationLogger")
         self.setupcache = []
 
-    __version__ = "1.4.3"
+    __version__ = "1.4.4"
     __author__ = ["NoobInDaHause"]
     __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
 
@@ -362,14 +362,21 @@ class DonationLogger(commands.Cog):
     @donationlogger.command(name="leaderboard", aliases=["lb"])
     @is_setup_done()
     async def donationlogger_leaderboard(
-        self, context: commands.Context, bank_name: BankConverter, top: int = 10
+        self,
+        context: commands.Context,
+        bank_name: BankConverter,
+        top: Optional[int] = 10,
+        show_left_users: bool = True,
     ):
         """
         See who has donated the most from a bank.
+
+        **top**: The top number to show. (max 25)
+        **show_left_users**: Whether to show the users who are not in the guild.
         """
         if top > 25 or top < 1:
             return await context.send(content="Top number must be between 1-25.")
-        await HYBRIDS.hybrid_leaderboard(self, context, bank_name, top)
+        await HYBRIDS.hybrid_leaderboard(self, context, bank_name, top, show_left_users)
 
     @donationlogger.command(name="add", aliases=["+", "a"])
     @is_setup_done()
@@ -1033,12 +1040,14 @@ class DonationLogger(commands.Cog):
     @app_commands.describe(
         bank_name="The name of the registered bank.",
         top="The top number. (min: 1, max: 25, default: 10)",
+        show_left_users="Whether to show the users who are not in the guild.",
     )
     async def slash_donationlogger_leaderboard(
         self,
         interaction: discord.Interaction[Red],
         bank_name: app_commands.Transform[str, BankConverter],
         top: app_commands.Range[int, 1, 25] = 10,
+        show_left_users: Optional[bool] = True,
     ):
         """_summary_
 
@@ -1054,7 +1063,9 @@ class DonationLogger(commands.Cog):
                 )
             else:
                 return await interaction.response.send_message(content=bank_name[0])
-        await HYBRIDS.hybrid_leaderboard(self, interaction, bank_name, top)
+        await HYBRIDS.hybrid_leaderboard(
+            self, interaction, bank_name, top, show_left_users
+        )
 
     @slash_donologger.command(
         name="add", description="Add bank donation amount to a member or yourself."
