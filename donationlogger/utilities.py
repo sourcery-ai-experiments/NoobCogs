@@ -44,7 +44,7 @@ async def verify_roles(
     for raw in raw_roles:
         try:
             r = raw.strip()
-            role = await nu.NoobFuzzyRole.convert(context, r)
+            role = await nu.NoobFuzzyRole().convert(context, r)
             if role._role not in roles:
                 roles.append(role._role)
         except Exception:
