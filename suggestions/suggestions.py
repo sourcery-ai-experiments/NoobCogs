@@ -1,10 +1,9 @@
 import asyncio
 import contextlib
 import discord
-import logging
 import noobutils as nu
 
-from redbot.core.bot import app_commands, commands, Config, Red
+from redbot.core.bot import app_commands, commands, Red
 from redbot.core.utils import chat_formatting as cf
 
 from typing import Literal
@@ -12,7 +11,18 @@ from typing import Literal
 from .views import SuggestionView, SuggestionViewView
 
 
-class Suggestions(commands.Cog):
+DEFAULT_GUILD = {
+    "auto_delete": True,
+    "emojis": {"upvote": "⬆️", "downvote": "⬇️"},
+    "button_colour": {"upbutton": "blurple", "downbutton": "blurple"},
+    "channels": {"suggest": None, "reject": None, "approve": None},
+    "self_vote": True,
+    "next_id": 1,
+    "suggestions": {},
+}
+
+
+class Suggestions(nu.Cog):
     """
     Suggestion system.
 
@@ -20,38 +30,17 @@ class Suggestions(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-        self.config = Config.get_conf(
-            self, identifier=1234567890, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="2.1.0",
+            authors=["NooInDaHause"],
+            use_config=True,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_guild = {
-            "auto_delete": True,
-            "emojis": {"upvote": "⬆️", "downvote": "⬇️"},
-            "button_colour": {"upbutton": "blurple", "downbutton": "blurple"},
-            "channels": {"suggest": None, "reject": None, "approve": None},
-            "self_vote": True,
-            "next_id": 1,
-            "suggestions": {},
-        }
-        self.config.register_guild(**default_guild)
-
-        self.log = logging.getLogger("red.NoobCogs.Suggestions")
-
-    __version__ = "2.0.2"
-    __author__ = ["NooInDaHause"]
-    __docs__ = (
-        "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/suggestions/README.md"
-    )
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})"
-        )
+        self.config.register_guild(**DEFAULT_GUILD)
 
     async def red_delete_data_for_user(
         self,
@@ -309,9 +298,11 @@ class Suggestions(commands.Cog):
             )
             await self.send_to_reject_or_approve_channel(
                 context,
-                data["channels"]["approve"]
-                if status_type == "approved"
-                else data["channels"]["reject"],
+                (
+                    data["channels"]["approve"]
+                    if status_type == "approved"
+                    else data["channels"]["reject"]
+                ),
                 msg.jump_url,
                 embed,
             )
@@ -508,26 +499,32 @@ class Suggestions(commands.Cog):
         embed = await self.make_embed(
             title=f"Suggestion **#{suggestion_id}**",
             desc=suggest_data["suggestion"],
-            colour=await context.embed_colour()
-            if suggest_data["status"] == "running"
-            else discord.Colour.green()
-            if suggest_data["status"] == "approved"
-            else discord.Colour.red(),
+            colour=(
+                await context.embed_colour()
+                if suggest_data["status"] == "running"
+                else (
+                    discord.Colour.green()
+                    if suggest_data["status"] == "approved"
+                    else discord.Colour.red()
+                )
+            ),
             authname=f"{mem} ({mem.id})" if mem else "[Unknown or Deleted User]",
             authic=nu.is_have_avatar(mem or context.guild),
             stattype=suggest_data["status"],
-            reviewer=None
-            if suggest_data["status"] == "running"
-            else rev.mention
-            if rev
-            else "[Unknown or Deleted User]",
+            reviewer=(
+                None
+                if suggest_data["status"] == "running"
+                else rev.mention if rev else "[Unknown or Deleted User]"
+            ),
             reason=suggest_data["reason"],
             results=(
-                f"{data['emojis']['upvote']}: {len(suggest_data['upvotes'])}\n"
-                f"{data['emojis']['downvote']}: {len(suggest_data['downvotes'])}"
-            )
-            if suggest_data["status"] != "running"
-            else None,
+                (
+                    f"{data['emojis']['upvote']}: {len(suggest_data['upvotes'])}\n"
+                    f"{data['emojis']['downvote']}: {len(suggest_data['downvotes'])}"
+                )
+                if suggest_data["status"] != "running"
+                else None
+            ),
         )
         u = f"https://discord.com/channels/{context.guild.id}/{channel.id}/{msg.id}"
         view = SuggestionViewView()
@@ -608,9 +605,11 @@ class Suggestions(commands.Cog):
             embed = await self.make_embed(
                 title=f"Suggestion **#{suggestion_id}**",
                 desc=suggest_data["suggestion"],
-                colour=discord.Colour.green()
-                if suggest_data["status"] == "approved"
-                else discord.Colour.red(),
+                colour=(
+                    discord.Colour.green()
+                    if suggest_data["status"] == "approved"
+                    else discord.Colour.red()
+                ),
                 authname=f"{mem} ({mem.id})" if mem else "[Unknown or Deleted User]",
                 authic=nu.is_have_avatar(mem or context.guild),
                 stattype=suggest_data["status"],
@@ -745,7 +744,11 @@ class Suggestions(commands.Cog):
         vote_emojis = self.config.guild(context.guild).emojis
 
         if not emoji:
-            await vote_emojis.upvote.clear() if vote == "upvote" else await vote_emojis.downvote.clear()
+            (
+                await vote_emojis.upvote.clear()
+                if vote == "upvote"
+                else await vote_emojis.downvote.clear()
+            )
             emoji_name = "UpVote" if vote == "upvote" else "DownVote"
             emoji_value = (
                 await vote_emojis.upvote()
@@ -756,9 +759,11 @@ class Suggestions(commands.Cog):
                 f"The {emoji_name} emoji has been reset to: {emoji_value}"
             )
 
-        await vote_emojis.upvote.set(
-            str(emoji)
-        ) if vote == "upvote" else await vote_emojis.downvote.set(str(emoji))
+        (
+            await vote_emojis.upvote.set(str(emoji))
+            if vote == "upvote"
+            else await vote_emojis.downvote.set(str(emoji))
+        )
         emoji_name = "UpVote" if vote == "upvote" else "DownVote"
         await context.send(f"Successfully set the {emoji_name} emoji to: {emoji}")
 

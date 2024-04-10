@@ -18,7 +18,16 @@ if TYPE_CHECKING:
     from .utilities import FollowupItem, MessageEditItem
 
 
-class Timers(commands.Cog):
+DEFAULT_GUILD = {
+    "timer_button_colour": {"ended": "grey", "started": "green"},
+    "notify_members": True,
+    "timer_emoji": "⏰",
+    "auto_delete": False,
+}
+DEFAULT_GLOBAL = {"maximum_duration": 1209600}
+
+
+class Timers(nu.Cog):
     """
     Start a timer countdown.
 
@@ -26,45 +35,28 @@ class Timers(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=65466546, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="2.3.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            identifier=65466546,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_guild = {
-            "timer_button_colour": {"ended": "grey", "started": "green"},
-            "notify_members": True,
-            "timer_emoji": "⏰",
-            "auto_delete": False,
-        }
-        default_global = {"maximum_duration": 1209600}
-        self.config.register_guild(**default_guild)
-        self.config.register_global(**default_global)
+        self.config.register_guild(**DEFAULT_GUILD)
+        self.config.register_global(**DEFAULT_GLOBAL)
         self.config.init_custom("TIMERS", 1)
-        self.log = logging.getLogger("red.NoobCogs.Timers")
         self.running = True
         self.active_timers: List[TimerObject] = []
-        self.folloup_queue_task = asyncio.create_task(self.followup_runner())
-        self.message_edit_queue_task = asyncio.create_task(self.message_edit_runner())
+        self.folloup_queue_task = bot.loop.create_task(self.followup_runner())
+        self.message_edit_queue_task = bot.loop.create_task(self.message_edit_runner())
         self.followup_queue: asyncio.Queue[FollowupItem] = asyncio.Queue()
         self.message_edit_queue: asyncio.Queue[MessageEditItem] = asyncio.Queue()
         self.view = TimersView(self)
         bot.add_view(self.view)
-
-    __version__ = "2.2.0"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/timers/README.md"
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})\n"
-            f"Utils Version: **{nu.__version__}**"
-        )
 
     async def red_delete_data_for_user(
         self,
@@ -234,24 +226,33 @@ class Timers(commands.Cog):
             "\n",
             embed_colour=self.bot._color,
             embed_title=title,
-            embed_thumbnail=nu.is_have_avatar(bot)
-            if _all
-            else nu.is_have_avatar(context.guild),
+            embed_thumbnail=(
+                nu.is_have_avatar(bot) if _all else nu.is_have_avatar(context.guild)
+            ),
         )
 
     @tasks.loop(seconds=5)
     async def timer_ending_loop(self):
         if not self.running:
             return
-        for t in self.active_timers.copy():
-            if timer := discord.utils.get(self.active_timers, message_id=t.message_id):
-                if timer.ended or timer.cancelled:
-                    continue
-                if timer.ends_at < datetime.now(timezone.utc):
-                    if not timer.guild:
-                        self.remove_timer(timer)
-                        continue
-                    await timer.end()
+
+        gaws_to_end = list(
+            filter(
+                lambda x: x.ends_at < datetime.now(timezone.utc)
+                and not x.ended
+                and not x.cancelled,
+                self.active_timers,
+            )
+        )
+
+        if not gaws_to_end:
+            return
+
+        for t in gaws_to_end:
+            if not t.guild:
+                self.remove_timer(t)
+                continue
+            await t.end()
 
     @tasks.loop(minutes=5)
     async def save_timers_loop(self):

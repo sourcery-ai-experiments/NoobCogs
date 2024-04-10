@@ -1,47 +1,38 @@
 import contextlib
 import datetime
 import discord
-import logging
 import noobutils as nu
 import TagScriptEngine as tse
 
-from redbot.core.bot import commands, Config, Red
+from redbot.core.bot import commands, Red
 from redbot.core.utils import chat_formatting as cf
 
 from typing import Literal
 
 
-class JoinDM(commands.Cog):
+DEFAULT_GUILD = {"message": None, "toggled": False}
+
+
+class JoinDM(nu.Cog):
     """
     DM newly joined users from your guild with your set message.
 
-    This cog uses TagScriptEngine and requires you basic tagscript knowledge to use this cog.
+    This cog uses TagScriptEngine and requires you to know basic tagscript knowledge to use this cog.
     """
 
     def __init__(self, bot: Red, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-        default_guild = {"message": None, "toggled": False}
-        self.config = Config.get_conf(
-            self, identifier=947_123_432_421, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.1.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            identifier=947_123_432_421,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        self.config.register_guild(**default_guild)
-        self.log = logging.getLogger("red.NoobCogs.JoinDM")
-
-    __version__ = "1.0.6"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/joindm/README.md"
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})\n"
-            f"Utils Version: **{nu.__version__}**"
-        )
+        self.config.register_guild(**DEFAULT_GUILD)
 
     async def red_delete_data_for_user(
         self,

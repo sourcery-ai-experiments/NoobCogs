@@ -7,7 +7,7 @@ from noobutils import NoobEmojiConverter
 from typing import List, TYPE_CHECKING, Union
 
 from .checks import check_if_is_a_dono_manager_or_higher, check_if_setup_done
-from .exceptions import BankConversionFailure, AmountConversionFailure
+from .exceptions import BankConversionFailure, AmountConversionFailure, MemberOrUserNotFound
 
 if TYPE_CHECKING:
     from . import DonationLogger
@@ -80,7 +80,9 @@ class MemberOrUserConverter(app_commands.Transformer):
             try:
                 return await commands.UserConverter().convert(ctx, argument)
             except commands.UserNotFound as e:
-                raise commands.BadArgument(f"Member or User '{argument}' not found.") from e
+                raise MemberOrUserNotFound(
+                    f"Member or User '{argument}' not found."
+                ) from e
 
     @classmethod
     async def transform(

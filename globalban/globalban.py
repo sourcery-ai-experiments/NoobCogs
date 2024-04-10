@@ -1,54 +1,40 @@
 import asyncio
 import contextlib
 import discord
-import logging
 import noobutils as nu
 
-from redbot.core.bot import commands, Config, modlog, Red
-from redbot.core.utils import chat_formatting as cf
+from redbot.core.bot import commands, modlog, Red
 
 from typing import Literal, Union
 
 from .views import GbanViewReset
 
 
-class GlobalBan(commands.Cog):
+DEFAULT_GLOBAL = {
+    "banlist": [],
+    "banlogs": {},
+    "create_modlog": False,
+    "next_id": 1,
+}
+
+
+class GlobalBan(nu.Cog):
     """
     Globally ban a user from all the guilds the bot is in.
     """
 
-    def __init__(self, bot: Red) -> None:
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=123456789, force_registration=True
+    def __init__(self, bot: Red, *args, **kwargs) -> None:
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.3.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_global = {
-            "banlist": [],
-            "banlogs": {},
-            "create_modlog": False,
-            "next_id": 1,
-        }
-        self.config.register_global(**default_global)
-        self.log = logging.getLogger("red.NoobCogs.GlobalBan")
-
-    __version__ = "1.2.1"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = (
-        "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/globalban/README.md"
-    )
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        """
-        Thanks Sinbad and sravan!
-        """
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})"
-        )
+        self.config.register_global(**DEFAULT_GLOBAL)
 
     async def red_delete_data_for_user(
         self,

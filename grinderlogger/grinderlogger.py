@@ -1,11 +1,10 @@
 import contextlib
 import datetime as dt
 import discord
-import logging
 import noobutils as nu
 import time
 
-from redbot.core.bot import commands, Config, Red
+from redbot.core.bot import commands, Red
 from redbot.core.utils import chat_formatting as cf, mod
 
 from discord.ext import tasks
@@ -17,7 +16,26 @@ if TYPE_CHECKING:
     from donationlogger.donationlogger import DonationLogger
 
 
-class GrinderLogger(commands.Cog):
+DEFAULT_GUILD = {
+    "managers": [],
+    "grinders": {},
+    "channels": {
+        "logging": None,
+        "notifying": None,
+        "history": None,
+    },
+    "tiers": {"1": {}, "2": {}, "3": {}, "4": {}, "5": {}},
+    "dm_status": True,
+    "bank": None,
+}
+DEFAULT_MEMBER = {
+    "donations": 0,
+    "times_as_grinder": 0,
+    "last_time_as_grinder": None,
+}
+
+
+class GrinderLogger(nu.Cog):
     """
     GrinderLogger system.
 
@@ -25,51 +43,21 @@ class GrinderLogger(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=1234567890, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.2.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_guild = {
-            "managers": [],
-            "grinders": {},
-            "channels": {
-                "logging": None,
-                "notifying": None,
-                "history": None,
-            },
-            "tiers": {"1": {}, "2": {}, "3": {}, "4": {}, "5": {}},
-            "dm_status": True,
-            "bank": None,
-        }
-        default_member = {
-            "donations": 0,
-            "times_as_grinder": 0,
-            "last_time_as_grinder": None,
-        }
-        self.config.register_guild(**default_guild)
-        self.config.register_member(**default_member)
+        self.config.register_guild(**DEFAULT_GUILD)
+        self.config.register_member(**DEFAULT_MEMBER)
         self.config.init_custom(group_identifier="Grinders", identifier_count=1)
-        self.log = logging.getLogger("red.NoobCogs.GrinderLogger")
         self.init_done = False
         self.data: Dict[str, Dict[str, Dict[str, Any]]] = {}
-
-    __version__ = "1.1.15"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = (
-        "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/grinderlogger/README.md"
-    )
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})\n"
-            f"Utils Version: **{nu.__version__}**"
-        )
 
     async def red_delete_data_for_user(
         self,
@@ -173,9 +161,7 @@ class GrinderLogger(commands.Cog):
                     description=desc,
                 )
                 .set_thumbnail(url=nu.is_have_avatar(guild))
-                .set_footer(
-                    text=guild.name, icon_url=nu.is_have_avatar(guild)
-                )
+                .set_footer(text=guild.name, icon_url=nu.is_have_avatar(guild))
             )
         else:
             _desc = (
@@ -193,9 +179,7 @@ class GrinderLogger(commands.Cog):
                     description=_desc,
                 )
                 .set_thumbnail(url=nu.is_have_avatar(guild))
-                .set_footer(
-                    text=guild.name, icon_url=nu.is_have_avatar(guild)
-                )
+                .set_footer(text=guild.name, icon_url=nu.is_have_avatar(guild))
             )
         with contextlib.suppress(
             (discord.errors.Forbidden, discord.errors.HTTPException)
@@ -620,7 +604,7 @@ class GrinderLogger(commands.Cog):
         self,
         guild: discord.Guild,
         sort_by: str,
-        all_m: Dict[Union[discord.Member, int], Dict[str, Any]]
+        all_m: Dict[Union[discord.Member, int], Dict[str, Any]],
     ) -> List[str]:
         tiers = await self.config.guild(guild).tiers()
         all_mem = []
@@ -641,7 +625,7 @@ class GrinderLogger(commands.Cog):
         for index, (mem, mem_dono) in enumerate(
             sorted(all_m.items(), key=k, reverse=True), 1
         ):
-            amt = tiers[mem_dono['tier']]["amount"]
+            amt = tiers[mem_dono["tier"]]["amount"]
             if isinstance(mem, discord.Member):
                 t = f"{mem_dono['tier']} ({cf.humanize_number(amt)}/day)"
                 msg = (
@@ -668,11 +652,15 @@ class GrinderLogger(commands.Cog):
             if guild := self.bot.get_guild(int(guild_id)):
                 for member_id in grinder_data.keys():
                     if member_data := self.data.get(guild_id, {}).get(member_id):
-                        if not member_data["reminded"] and member_data["due_timestamp"] and (
-                            dt.datetime.fromtimestamp(
-                                member_data["due_timestamp"], dt.timezone.utc
+                        if (
+                            not member_data["reminded"]
+                            and member_data["due_timestamp"]
+                            and (
+                                dt.datetime.fromtimestamp(
+                                    member_data["due_timestamp"], dt.timezone.utc
+                                )
+                                < dt.datetime.now(dt.timezone.utc)
                             )
-                            < dt.datetime.now(dt.timezone.utc)
                         ):
                             try:
                                 await self.remind_member(guild, member_id)
@@ -1075,7 +1063,13 @@ class GrinderLogger(commands.Cog):
         )
         await context.send(content=f"Added **{member.name}** as a Tier {tier} grinder.")
         await self.dm_grinder(
-            context.guild, member, tiers[tier]["amount"], added_roles, tier, "added", reason
+            context.guild,
+            member,
+            tiers[tier]["amount"],
+            added_roles,
+            tier,
+            "added",
+            reason,
         )
         await self.log_grinder_history(
             context, member, tier, tiers[tier]["amount"], "added", None, reason
@@ -1133,7 +1127,13 @@ class GrinderLogger(commands.Cog):
                 "remove", member, roles, audit_reason
             )
             await self.dm_grinder(
-                context.guild, member, tiers[tier]["amount"], removed_roles, tier, "removed", reason
+                context.guild,
+                member,
+                tiers[tier]["amount"],
+                removed_roles,
+                tier,
+                "removed",
+                reason,
             )
             await context.send(content=f"Removed **{member.name}** from grinders.")
         else:

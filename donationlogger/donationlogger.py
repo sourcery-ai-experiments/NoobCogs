@@ -1,20 +1,33 @@
 import discord
 import noobutils as nu
-import logging
 
-from redbot.core.bot import app_commands, commands, Config, Red
+from redbot.core.bot import app_commands, commands, Red
 from redbot.core.utils import chat_formatting as cf, mod
 
 from typing import Dict, Literal, List, Optional, Union
 
 from .checks import is_a_dono_manager_or_higher, is_setup_done
-from .converters import AmountConverter, BankConverter, DLEmojiConverter, MemberOrUserConverter
+from .converters import (
+    AmountConverter,
+    BankConverter,
+    DLEmojiConverter,
+    MemberOrUserConverter,
+)
 from .exceptions import MoreThanThreeRoles
 from .hybrids import HYBRIDS
 from .utilities import verify_amount_roles
 
 
-class DonationLogger(commands.Cog):
+DEFAULT_GUILD = {
+    "managers": [],
+    "banks": {},
+    "log_channel": None,
+    "auto_role": False,
+    "setup": False,
+}
+
+
+class DonationLogger(nu.Cog):
     """
     Donation Logger System.
 
@@ -22,35 +35,19 @@ class DonationLogger(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=657668242451927167510, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.7.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            identifier=657668242451927167510,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_guild = {
-            "managers": [],
-            "banks": {},
-            "log_channel": None,
-            "auto_role": False,
-            "setup": False,
-        }
-        self.config.register_guild(**default_guild)
-        self.log = logging.getLogger("red.NoobCogs.DonationLogger")
+        self.config.register_guild(**DEFAULT_GUILD)
         self.setupcache = []
-
-    __version__ = "1.6.4"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/donationlogger/README.md"
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})"
-        )
 
     async def red_delete_data_for_user(
         self,
@@ -141,7 +138,7 @@ class DonationLogger(commands.Cog):
         final: Dict[str, str] = {}
         final_overall = []
         for key, value in _dict.items():
-            donos = value['donations']
+            donos = value["donations"]
             final[key] = f"{value['emoji']} {cf.humanize_number(donos)}"
             final_overall.append(donos)
 

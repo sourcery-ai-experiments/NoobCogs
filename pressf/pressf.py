@@ -1,46 +1,36 @@
-import logging
 import noobutils as nu
 
-from redbot.core.bot import app_commands, commands, Config, Red
-from redbot.core.utils import chat_formatting as cf
+from redbot.core.bot import app_commands, commands, Red
 
 from typing import Literal
 
 from .views import PressFView
 
 
-class PressF(commands.Cog):
+DEFAULT_GUILD = {"emoji": "🇫", "buttoncolour": "blurple"}
+
+
+class PressF(nu.Cog):
     """
     F.
 
     Press F to pay respect on something using buttons.
     """
 
-    def __init__(self, bot: Red) -> None:
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=5434354373844151563453, force_registration=True
+    def __init__(self, bot: Red, *args, **kwargs) -> None:
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.2.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            identifier=5434354373844151563453,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_guild = {"emoji": "🇫", "buttoncolour": "blurple"}
-        self.config.register_guild(**default_guild)
-        self.log = logging.getLogger("red.NoobCogs.PressF")
+        self.config.register_guild(**DEFAULT_GUILD)
         self.active_cache = []
-
-    __version__ = "1.1.8"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/pressf/README.md"
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        """
-        Thanks Sinbad and sravan!
-        """
-        plural = "s" if len(self.__author__) > 1 else ""
-        return f"""{super().format_help_for_context(context)}
-
-        Cog Version: **{self.__version__}**
-        Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}
-        Cog Documentation: [[Click here]]({self.__docs__})"""
 
     async def red_delete_data_for_user(
         self,

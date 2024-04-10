@@ -1,14 +1,24 @@
 import discord
 import noobutils as nu
-import logging
 
-from redbot.core.bot import app_commands, commands, Config, Red
-from redbot.core.utils import chat_formatting as cf
+from redbot.core.bot import app_commands, commands, Red
 
 from typing import Literal
 
 
-class Afk(commands.Cog):
+DEFAULT_GUILD = {"nick": True}
+DEFAULT_MEMBER = {
+    "afk": False,
+    "sticky": False,
+    "toggle_logs": True,
+    "reason": None,
+    "timestamp": None,
+    "pinglogs": [],
+}
+DEFAULT_GLOBAL = {"delete_after": 10}
+
+
+class Afk(nu.Cog):
     """
     Notify users whenever you go AFK with pings logging.
 
@@ -16,41 +26,20 @@ class Afk(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=54646544526864548, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.6.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            identifier=54646544526864548,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_guild = {"nick": True}
-        default_member = {
-            "afk": False,
-            "sticky": False,
-            "toggle_logs": True,
-            "reason": None,
-            "timestamp": None,
-            "pinglogs": [],
-        }
-        default_global = {"delete_after": 10}
-        self.config.register_guild(**default_guild)
-        self.config.register_member(**default_member)
-        self.config.register_global(**default_global)
-        self.log = logging.getLogger("red.NoobCogs.Afk")
-
-    __version__ = "1.5.1"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/afk/README.md"
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        """
-        Thanks Sinbad and sravan!
-        """
-        plural = "s" if len(self.__author__) > 1 else ""
-        return f"""{super().format_help_for_context(context)}
-
-        Cog Version: **{self.__version__}**
-        Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}
-        Cog Documentation: [[Click here]]({self.__docs__})"""
+        self.config.register_guild(**DEFAULT_GUILD)
+        self.config.register_member(**DEFAULT_MEMBER)
+        self.config.register_global(**DEFAULT_GLOBAL)
 
     async def red_delete_data_for_user(
         self,
@@ -72,7 +61,9 @@ class Afk(commands.Cog):
                 guild_data = await self.config.all_members(guild)
                 if user_id in guild_data.keys():
                     await self.config.member_from_ids(guild.id, user_id).clear()
-                async with self.config.member_from_ids(guild.id, user_id).pinglogs() as pl:
+                async with self.config.member_from_ids(
+                    guild.id, user_id
+                ).pinglogs() as pl:
                     if not pl:
                         continue
                     for i in pl:
@@ -96,7 +87,7 @@ class Afk(commands.Cog):
         if await self.config.guild(guild).nick():
             try:
                 await user.edit(
-                    nick=f"[AFK] {user.display_name}", reason="User is AFK."
+                    nick=f"[AFK] {user.display_name}", reason="Member is AFK."
                 )
             except discord.errors.Forbidden:
                 if user.id == guild.owner.id:
@@ -132,7 +123,7 @@ class Afk(commands.Cog):
             try:
                 await user.edit(
                     nick=f"{user.display_name}".replace("[AFK]", ""),
-                    reason="User is no longer AFK.",
+                    reason="Member is no longer AFK.",
                 )
             except discord.errors.Forbidden:
                 if user.id == guild.owner.id:
@@ -219,12 +210,18 @@ class Afk(commands.Cog):
     @commands.Cog.listener("on_member_remove")
     async def m_remove(self, member: discord.Member):
         guild_data = await self.config.all_members(member.guild)
-        if member.id in guild_data.keys():
-            if await self.config.member_from_ids(member.guild.id, member.id).afk():
-                await self.config.member_from_ids(member.guild.id, member.id).afk.clear()
-                await self.config.member_from_ids(member.guild.id, member.id).timestamp.clear()
-                await self.config.member_from_ids(member.guild.id, member.id).reason.clear()
-                await self.config.member_from_ids(member.guild.id, member.id).pinglogs.clear()
+        if (
+            member.id in guild_data.keys()
+            and await self.config.member_from_ids(member.guild.id, member.id).afk()
+        ):
+            await self.config.member_from_ids(member.guild.id, member.id).afk.clear()
+            await self.config.member_from_ids(
+                member.guild.id, member.id
+            ).timestamp.clear()
+            await self.config.member_from_ids(member.guild.id, member.id).reason.clear()
+            await self.config.member_from_ids(
+                member.guild.id, member.id
+            ).pinglogs.clear()
 
     @commands.Cog.listener("on_message")
     async def afk_listener(self, message: discord.Message):
@@ -438,11 +435,7 @@ class Afk(commands.Cog):
         member_settings = await self.config.member(context.author).all()
         guild_settings = await self.config.guild(context.guild).all()
         delete_after = await self.config.delete_after()
-        da = (
-            f"{delete_after} seconds."
-            if delete_after != 0
-            else "Disabled."
-        )
+        da = f"{delete_after} seconds." if delete_after != 0 else "Disabled."
         aset = f"`Nick change:` {guild_settings['nick']}"
         globe = f"`Delete after:` {da}"
 

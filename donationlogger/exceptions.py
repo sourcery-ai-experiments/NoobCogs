@@ -5,6 +5,10 @@ class AmountConversionFailure(BadArgument):
     pass
 
 
+class MemberOrUserNotFound(BadArgument):
+    pass
+
+
 class MoreThanThreeRoles(BadArgument):
     pass
 

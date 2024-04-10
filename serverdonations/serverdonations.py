@@ -1,10 +1,9 @@
 import contextlib
 import discord
-import logging
 import noobutils as nu
 import TagScriptEngine as tse
 
-from redbot.core.bot import app_commands, commands, Config, Red
+from redbot.core.bot import app_commands, commands, Red
 from redbot.core.utils import chat_formatting as cf
 
 from typing import List, Literal, Optional, Tuple
@@ -54,9 +53,16 @@ HMSG = """
 **Requirements:** {requirements}
 **Message:** {message}}
 """
+DEFAULT_GUILD = {
+    "auto_delete": False,
+    "dl_support": True,
+    "channels": {"gchan": None, "echan": None, "hchan": None},
+    "managers": {"gmans": [], "emans": [], "hmans": []},
+    "messages": {"gmsg": GMSG, "emsg": EMSG, "hmsg": HMSG},
+}
 
 
-class ServerDonations(commands.Cog):
+class ServerDonations(nu.Cog):
     """
     Donate bot currencies or any other currencies to servers.
 
@@ -64,35 +70,17 @@ class ServerDonations(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=1234567890, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="3.3.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_guild = {
-            "auto_delete": False,
-            "dl_support": True,
-            "channels": {"gchan": None, "echan": None, "hchan": None},
-            "managers": {"gmans": [], "emans": [], "hmans": []},
-            "messages": {"gmsg": GMSG, "emsg": EMSG, "hmsg": HMSG},
-        }
-        self.config.register_guild(**default_guild)
-        self.log = logging.getLogger("red.NoobCogs.ServerDonations")
-
-    __version__ = "3.2.6"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/serverdonations/README.md"
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})\n"
-            f"Utils Version: **{nu.__version__}**\n"
-        )
+        self.config.register_guild(**DEFAULT_GUILD)
 
     async def red_delete_data_for_user(
         self,
@@ -236,18 +224,22 @@ class ServerDonations(commands.Cog):
                 ):
                     failed.append(role.mention)
                 else:
-                    role_list.append(
-                        role.id
-                    ) if action_type == "add" else role_list.remove(role.id)
+                    (
+                        role_list.append(role.id)
+                        if action_type == "add"
+                        else role_list.remove(role.id)
+                    )
                     success.append(role.mention)
 
         conf = self.config.guild(context.guild).managers
         config = (
             getattr(conf, "emans")
             if _type == "event"
-            else getattr(conf, "gmans")
-            if _type == "giveaway"
-            else getattr(conf, "hmans")
+            else (
+                getattr(conf, "gmans")
+                if _type == "giveaway"
+                else getattr(conf, "hmans")
+            )
         )
 
         async with config() as managers:
@@ -387,9 +379,7 @@ class ServerDonations(commands.Cog):
         _type = (
             "gchan"
             if channel_type == "giveaway"
-            else "echan"
-            if channel_type == "event"
-            else "hchan"
+            else "echan" if channel_type == "event" else "hchan"
         )
         config = getattr(conf, _type)
         if not channel:
@@ -665,9 +655,11 @@ class ServerDonations(commands.Cog):
             requirements = "None"
         gaw = {
             "currency_type": currency_type.strip(),
-            "duration": cf.humanize_timedelta(timedelta=duration_td)
-            if (duration_td := commands.parse_timedelta(duration.strip()))
-            else duration.strip(),
+            "duration": (
+                cf.humanize_timedelta(timedelta=duration_td)
+                if (duration_td := commands.parse_timedelta(duration.strip()))
+                else duration.strip()
+            ),
             "winners": winners,
             "requirements": requirements.strip(),
             "prize": amt if (amt := format_amount(prize.strip())) else prize.strip(),

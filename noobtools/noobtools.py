@@ -1,19 +1,20 @@
 import amari
 import discord
-import logging
 import noobutils as nu
 import random
 
-from redbot.core.bot import app_commands, commands, Config, Red
-from redbot.core.utils import chat_formatting as cf, mod
+from redbot.core.bot import app_commands, commands, Red
+from redbot.core.utils import chat_formatting as cf
 
 from typing import List, Literal, Optional
 
 from .converters import ModifiedFuzzyRole
-from .views import ChangeAuditReasonView
 
 
-class NoobTools(commands.Cog):
+DEFAULT_GLOBAL = {"tick_emoji": None}
+
+
+class NoobTools(nu.Cog):
     """
     NoobInDahause's personal tools.
 
@@ -21,37 +22,17 @@ class NoobTools(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-        self.config = Config.get_conf(
-            self, identifier=1234567890, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.2.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            force_registration=True,
+            *args,
+            **kwargs
         )
-        default_global = {
-            "audit_reason": {"with_reason": None, "without_reason": None},
-            "tick_emoji": None,
-        }
-        self.config.register_global(**default_global)
-
-        self.log = logging.getLogger("red.NoobCogs.NoobTools")
-        self.old_get_audit_reason = mod.get_audit_reason
-
-    __version__ = "1.1.3"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = (
-        "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/noobtools/README.md"
-    )
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        """
-        Thanks Sinbad and sravan!
-        """
-        plural = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})"
-        )
+        self.config.register_global(**DEFAULT_GLOBAL)
 
     async def red_delete_data_for_user(
         self,
@@ -70,29 +51,7 @@ class NoobTools(commands.Cog):
         if t := await self.config.tick_emoji():
             commands.context.TICK = t
 
-        a = await self.config.audit_reason()
-        if a["with_reason"] and a["without_reason"]:
-
-            def get_audit_reason(
-                author: discord.Member, reason: str = None, *, shorten: bool = False
-            ):
-                audit_reason = (
-                    a["with_reason"].format(
-                        author_name=author.name, author_id=author.id, reason=reason
-                    )
-                    if reason
-                    else a["without_reason"].format(
-                        author_name=author.name, author_id=author.id
-                    )
-                )
-                if shorten and len(audit_reason) > 512:
-                    audit_reason = f"{audit_reason[:509]}..."
-                return audit_reason
-
-            mod.get_audit_reason = get_audit_reason
-
     async def cog_unload(self) -> None:
-        mod.get_audit_reason = self.old_get_audit_reason
         commands.context.TICK = "✅"
 
     @commands.hybrid_command(name="amarilevel", aliases=["alvl", "alevel", "amari"])
@@ -369,36 +328,3 @@ class NoobTools(commands.Cog):
         await context.tick()
         await context.send(content=f"Successfully set {str(emoji)} as my tick emoji.")
 
-    @commands.command(name="changeauditreason")
-    @commands.is_owner()
-    async def changeauditreason(
-        self, context: commands.Context, check: Optional[Literal["check", "reset"]]
-    ):
-        """
-        This command changes [botname]'s audit reason.
-
-        For every cog that uses audit reasons.
-
-        Add `check` to see current settings or `reset` to reset settings.
-
-        Available variables:
-        {author_name}: The audit authors name.
-        {author_id}: The audit authors ID.
-        {reason}: The audit reason.
-
-        Note:
-        You need all three variables present in the audit that is with reason.
-        """
-        if check == "check":
-            a = await self.config.audit_reason()
-            return await context.send(
-                content="Your current get_audit_reason settings is:\n\n**With reason:**\n"
-                f"```{a['with_reason']}```\n**Without reason:**\n```{a['without_reason']}```"
-            )
-        if check == "reset":
-            await self.config.audit_reason.with_reason.clear()
-            await self.config.audit_reason.without_reason.clear()
-            mod.get_audit_reason = self.old_get_audit_reason
-            return await context.send(content="Audit reason settings has been cleared.")
-        view = ChangeAuditReasonView(self)
-        await view.start(context)

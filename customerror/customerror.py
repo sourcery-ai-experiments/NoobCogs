@@ -1,18 +1,22 @@
 import contextlib
 import datetime
 import discord
-import logging
 import noobutils as nu
 import TagScriptEngine as tse
 import traceback
 
-from redbot.core.bot import commands, Config, Red
+from redbot.core.bot import commands, Red
 from redbot.core.utils import chat_formatting as cf
 
 from typing import Literal
 
 
-class CustomError(commands.Cog):
+DEFAULT_GLOBAL = {
+    "error_msg": "`Error in command '{command}'. Check your console or logs for details.`"
+}
+
+
+class CustomError(nu.Cog):
     """
     Customize your bots error message.
 
@@ -21,36 +25,21 @@ class CustomError(commands.Cog):
     Credits to sitryk and phen for some of the code.
     """
 
-    def __init__(self, bot: Red):
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=9874825374237, force_registration=True
+    def __init__(self, bot: Red, *args, **kwargs):
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.2.0",
+            authors=["NoobInDaHause"],
+            use_config=True,
+            identifier=9874825374237,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_global = {
-            "error_msg": "`Error in command '{command}'. Check your console or logs for details.`"
-        }
-        self.config.register_global(**default_global)
-        self.log = logging.getLogger("red.NoobCogs.CustomError")
+        self.config.register_global(**DEFAULT_GLOBAL)
         self.old_error = self.bot.on_command_error
-
         bot.on_command_error = self.on_command_error
-
-    __version__ = "1.1.16"
-    __author__ = ["NoobInDaHause"]
-    __docs__ = (
-        "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/customerror/README.md"
-    )
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        p = "s" if len(self.__author__) > 1 else ""
-        return (
-            f"{super().format_help_for_context(context)}\n\n"
-            f"Cog Version: **{self.__version__}**\n"
-            f"Cog Author{p}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}\n"
-            f"Cog Documentation: [[Click here]]({self.__docs__})\n"
-            f"Utils Version: **{nu.__version__}**"
-        )
 
     async def red_delete_data_for_user(
         self,

@@ -48,14 +48,18 @@ class GiveawayConverter(commands.Converter):
         giveaway_dict = {
             "winners": None,
             "requirements": arg[3].strip(),
-            "prize": cf.humanize_number(amt)
-            if (amt := format_amount(arg[4].strip()))
-            else arg[4].strip(),
+            "prize": (
+                cf.humanize_number(amt)
+                if (amt := format_amount(arg[4].strip()))
+                else arg[4].strip()
+            ),
             "message": arg[5].strip(),
             "currency_type": arg[0].strip(),
-            "duration": cf.humanize_timedelta(timedelta=duration_td)
-            if (duration_td := commands.parse_timedelta(arg[1].strip()))
-            else arg[1],
+            "duration": (
+                cf.humanize_timedelta(timedelta=duration_td)
+                if (duration_td := commands.parse_timedelta(arg[1].strip()))
+                else arg[1]
+            ),
         }
         try:
             giveaway_dict["winners"] = int(arg[2].replace("w", "").strip())
@@ -90,9 +94,11 @@ class EventConverter(commands.Converter):
             "currency_type": arg[0].strip(),
             "event_name": arg[1].strip(),
             "requirements": arg[2].strip(),
-            "prize": cf.humanize_number(amt)
-            if (amt := format_amount(arg[3].strip()))
-            else arg[3],
+            "prize": (
+                cf.humanize_number(amt)
+                if (amt := format_amount(arg[3].strip()))
+                else arg[3]
+            ),
         }
         return cls(**event_dict)
 
@@ -121,8 +127,10 @@ class HeistConverter(commands.Converter):
             "message": arg[3].strip(),
             "currency_type": arg[0].strip(),
             "requirements": arg[1].strip(),
-            "amount": cf.humanize_number(amt)
-            if (amt := format_amount(arg[2].strip()))
-            else arg[2],
+            "amount": (
+                cf.humanize_number(amt)
+                if (amt := format_amount(arg[2].strip()))
+                else arg[2]
+            ),
         }
         return cls(**heist_dict)

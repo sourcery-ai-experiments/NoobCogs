@@ -1,15 +1,17 @@
 import datetime
 import discord
-import logging
 import noobutils as nu
 
-from redbot.core.bot import commands, Config, Red
+from redbot.core.bot import commands, Red
 from redbot.core.utils import chat_formatting as cf
 
 from typing import Literal
 
 
-class DevLogs(commands.Cog):
+DEFAULT_GLOBAL = {"default_channel": None, "bypass": []}
+
+
+class DevLogs(nu.Cog):
     """
     Keep a log of all that evals and debugs.
 
@@ -18,32 +20,18 @@ class DevLogs(commands.Cog):
     """
 
     def __init__(self, bot: Red, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = bot
-
-        self.config = Config.get_conf(
-            self, identifier=0x2_412_214_4315312_9, force_registration=True
+        super().__init__(
+            bot=bot,
+            cog_name=self.__class__.__name__,
+            version="1.1.0",
+            authors=["sravan", "NoobInDaHause"],
+            use_config=True,
+            identifier=0x2_412_214_4315312_9,
+            force_registration=True,
+            *args,
+            **kwargs,
         )
-        default_global = {"default_channel": None, "bypass": []}
-        self.config.register_global(**default_global)
-        self.log = logging.getLogger("red.NoobCogs.DevLogs")
-
-    __version__ = "1.0.9"
-    __author__ = ["sravan_krishna", "NoobInDaHause"]
-    __docs__ = (
-        "https://github.com/NoobInDaHause/NoobCogs/blob/red-3.5/devlogs/README.md"
-    )
-
-    def format_help_for_context(self, context: commands.Context) -> str:
-        """
-        Thanks Sinbad and sravan!
-        """
-        plural = "s" if len(self.__author__) > 1 else ""
-        return f"""{super().format_help_for_context(context)}
-
-        Cog Version: **{self.__version__}**
-        Cog Author{plural}: {cf.humanize_list([f'**{auth}**' for auth in self.__author__])}
-        Cog Documentation: [[Click here]]({self.__docs__})"""
+        self.config.register_global(**DEFAULT_GLOBAL)
 
     async def red_delete_data_for_user(
         self,

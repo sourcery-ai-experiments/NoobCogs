@@ -52,21 +52,23 @@ class TimerObject:
         embed = discord.Embed(
             title=self.title,
             description=desc,
-            colour=discord.Colour.red()
-            if self.cancelled
-            else 0x2F3136
-            if self.ended
-            else self.cog.bot._color,
-            timestamp=datetime.now(timezone.utc)
-            if self.ended
-            else datetime.fromtimestamp(self.end_timestamp, timezone.utc),
+            colour=(
+                discord.Colour.red()
+                if self.cancelled
+                else 0x2F3136 if self.ended else self.cog.bot._color
+            ),
+            timestamp=(
+                datetime.now(timezone.utc)
+                if self.ended
+                else datetime.fromtimestamp(self.end_timestamp, timezone.utc)
+            ),
         )
         embed.set_footer(
-            text="Cancelled at"
-            if self.cancelled
-            else "Ended at"
-            if self.ended
-            else "Ends at"
+            text=(
+                "Cancelled at"
+                if self.cancelled
+                else "Ended at" if self.ended else "Ends at"
+            )
         )
         embed.set_thumbnail(url=nu.is_have_avatar(self.guild))
         return embed
@@ -89,7 +91,7 @@ class TimerObject:
             "0" if notif else "Disabled",
             emoji,
             nu.get_button_colour(started),
-            not notif
+            not notif,
         )
         msg = await self.channel.send(embed=embed, view=view)
         view.stop()
@@ -129,9 +131,11 @@ class TimerObject:
                 member_length = len(members_to_notify)
                 end_view = discord.ui.View().add_item(
                     discord.ui.Button(
-                        label=str(member_length - 1)  # minus host
-                        if self.host
-                        else str(member_length),
+                        label=(
+                            str(member_length - 1)  # minus host
+                            if self.host
+                            else str(member_length)
+                        ),
                         emoji=emoji,
                         disabled=True,
                         style=nu.get_button_colour(end),
