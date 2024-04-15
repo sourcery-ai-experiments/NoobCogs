@@ -46,7 +46,7 @@ class GrinderLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.2.1",
+            version="1.2.2",
             authors=["NoobInDaHause"],
             use_config=True,
             force_registration=True,
@@ -233,7 +233,8 @@ class GrinderLogger(nu.Cog):
             dms_off.append(True)
         if not channels["notifying"]:
             return
-        notifchan = self.bot.get_channel(channels["notifying"])
+        
+        notifchan = guild.get_channel_or_thread(channels["notifying"])
         with contextlib.suppress(
             (discord.errors.Forbidden, discord.errors.HTTPException)
         ):
@@ -287,7 +288,7 @@ class GrinderLogger(nu.Cog):
         chan = await self.config.guild(context.guild).channels.history()
         if not chan:
             return
-        hchan = self.bot.get_channel(chan)
+        hchan = context.guild.get_channel_or_thread(chan)
         emo = "🗑️" if _type == "removed" else "📥"
         embed = discord.Embed(
             title=f"**__GRINDER {_type.upper()}__**",
@@ -327,7 +328,7 @@ class GrinderLogger(nu.Cog):
         chan = await self.config.guild(context.guild).channels.history()
         if not chan:
             return
-        hchan = context.guild.get_channel(chan)
+        hchan = context.guild.get_channel_or_thread(chan)
         dat = dt.datetime.now(dt.timezone.utc)
         res = f"- `{'Reason':<9}`: {reason}" if reason else ""
         if _type == "promote":
@@ -428,7 +429,7 @@ class GrinderLogger(nu.Cog):
         logchan = await self.config.guild(context.guild).channels.logging()
         if not logchan:
             return
-        lchan = self.bot.get_channel(logchan)
+        lchan = context.guild.get_channel_or_thread(logchan)
         tier = self.data[str(context.guild.id)][str(member.id)]["tier"]
         view = discord.ui.View().add_item(
             discord.ui.Button(label="Jump To Command", url=context.message.jump_url)
