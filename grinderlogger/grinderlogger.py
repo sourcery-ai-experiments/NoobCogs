@@ -46,7 +46,7 @@ class GrinderLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.2.0",
+            version="1.2.1",
             authors=["NoobInDaHause"],
             use_config=True,
             force_registration=True,
@@ -362,7 +362,8 @@ class GrinderLogger(nu.Cog):
         )
         try:
             await hchan.send(embed=embed)
-        except Exception:
+        except Exception as e:
+            self.log.exception(str(e), exc_info=e)
             await context.send(
                 content="Grinder history channel not found please report this to the admins.",
                 embed=embed,

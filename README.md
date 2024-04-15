@@ -30,7 +30,7 @@ If you have any issues with any of the cogs be sure to open an issue or make a p
 | DevLogs          |  v1.1.0   | Keep a log of all that evals and debugs.                     |
 | DonationLogger   |  v1.7.0   | Donation Logger system.                                      |
 | GlobalBan        |  v1.3.0   | Globally ban a user from all the guilds the bot is in.       |
-| GrinderLogger    |  v1.2.0   | GrinderLogger system.                                        |
+| GrinderLogger    |  v1.2.1   | GrinderLogger system.                                        |
 | JoinDM           |  v1.1.0   | DM newly joined users from your guild with your set message. |
 | NoobTools        |  v1.2.0   | NoobInDahause's personal tools.                              |
 | PressF           |  v1.2.0   | F.                                                           |
