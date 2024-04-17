@@ -24,7 +24,7 @@ If you have any issues with any of the cogs be sure to open an issue or make a p
 
 | Cog Name         |  Version  | Cog Description                                              |
 | ---------------- | --------- | ------------------------------------------------------------ |
-| Afk              |  v1.6.0   | Notify users whenever you go AFK with pings logging.         |
+| Afk              |  v1.6.1   | Notify users whenever you go AFK with pings logging.         |
 | CookieClicker    |  v1.2.0   | Play a cookie clicker.                                       |
 | CustomError      |  v1.2.0   | Customize your bots error message.                           |
 | DevLogs          |  v1.1.0   | Keep a log of all that evals and debugs.                     |

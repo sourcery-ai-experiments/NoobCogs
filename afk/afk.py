@@ -29,7 +29,7 @@ class Afk(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.6.0",
+            version="1.6.1",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=54646544526864548,
@@ -228,6 +228,8 @@ class Afk(nu.Cog):
         context: commands.Context = await self.bot.get_context(message)
         tuple_cmds = (f"{context.prefix}afk", f"{context.prefix}away")
         if not message.guild:
+            return
+        if message.is_system():
             return
         if not message.channel.permissions_for(message.guild.me).send_messages:
             return
