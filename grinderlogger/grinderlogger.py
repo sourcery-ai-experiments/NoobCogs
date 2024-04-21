@@ -46,7 +46,7 @@ class GrinderLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.2.2",
+            version="1.2.3",
             authors=["NoobInDaHause"],
             use_config=True,
             force_registration=True,
