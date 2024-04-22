@@ -32,6 +32,7 @@ DEFAULT_MEMBER = {
     "donations": 0,
     "times_as_grinder": 0,
     "last_time_as_grinder": None,
+    "reason_for_left": None
 }
 
 
@@ -46,7 +47,7 @@ class GrinderLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.2.3",
+            version="1.2.4",
             authors=["NoobInDaHause"],
             use_config=True,
             force_registration=True,
@@ -906,13 +907,16 @@ class GrinderLogger(nu.Cog):
             )
         else:
             last_time = await self.config.member(member).last_time_as_grinder()
+            reason_for_left = await self.config.guild(context.guild).reason_for_left()
             description = (
                 f"`{'Donations':<12}`: {donations}\n"
                 f"`{'Times Joined':<12}`: {f'{times} times' if times > 1 else f'{times} time'}\n"
-                f"`{'Grinder Left':<12}`: <t:{last_time}:R> (<t:{last_time}:f>)"
+                f"`{'Grinder Left':<12}`: <t:{last_time}:R> (<t:{last_time}:f>)\n"
                 if last_time
                 else None
             )
+            if reason_for_left and last_time:
+                description += f"`{'Reason':<12}`: {reason_for_left}"
 
         if description:
             embed = discord.Embed(
@@ -1019,8 +1023,6 @@ class GrinderLogger(nu.Cog):
     ):
         """
         Add a member as a grinder.
-
-        User will be DM-ed upon acceptance/rejection.
         """
         if reason and len(reason) > 2000:
             return await context.send(
@@ -1049,6 +1051,7 @@ class GrinderLogger(nu.Cog):
 
         times = await self.config.member(member).times_as_grinder()
         await self.config.member(member).times_as_grinder.set(times + 1)
+        await self.config.member(member).reason_for_left.clear()
         self.add_to_data(str(context.guild.id), str(member.id), member_data)
 
         await self.back_to_config()
@@ -1090,8 +1093,6 @@ class GrinderLogger(nu.Cog):
     ):
         """
         Remove a grinder.
-
-        User will be DM-ed upon acceptance/rejection.
         """
         if member.bot:
             return await context.send(content="Bots are not allowed.")
@@ -1119,6 +1120,10 @@ class GrinderLogger(nu.Cog):
             ).last_time_as_grinder.set(
                 round(dt.datetime.now(dt.timezone.utc).timestamp())
             )
+            if reason:
+                await self.config.member_from_ids(
+                    context.guild.id, member.id
+                ).reason_for_left.set(reason)
             audit_reason = mod.get_audit_reason(
                 context.author, reason=f"Member is no longer a Tier {tier} grinder."
             )
