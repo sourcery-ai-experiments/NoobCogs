@@ -46,7 +46,7 @@ class GrinderLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.2.2",
+            version="1.2.3",
             authors=["NoobInDaHause"],
             use_config=True,
             force_registration=True,
@@ -1007,6 +1007,7 @@ class GrinderLogger(nu.Cog):
         await nu.NoobPaginator(pagified).start(context)
 
     @grinderlogger.command(name="addmember")
+    @is_a_grinder_manager()
     @commands.bot_has_permissions(manage_roles=True)
     async def grinderloggerset_addmember(
         self,
@@ -1078,6 +1079,7 @@ class GrinderLogger(nu.Cog):
         )
 
     @grinderlogger.command(name="removemember")
+    @is_a_grinder_manager()
     @commands.bot_has_permissions(manage_roles=True)
     async def grinderloggerset_removemember(
         self,
