@@ -47,7 +47,7 @@ class GrinderLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.2.4",
+            version="1.2.5",
             authors=["NoobInDaHause"],
             use_config=True,
             force_registration=True,
@@ -907,7 +907,7 @@ class GrinderLogger(nu.Cog):
             )
         else:
             last_time = await self.config.member(member).last_time_as_grinder()
-            reason_for_left = await self.config.guild(context.guild).reason_for_left()
+            reason_for_left = await self.config.member(member).reason_for_left()
             description = (
                 f"`{'Donations':<12}`: {donations}\n"
                 f"`{'Times Joined':<12}`: {f'{times} times' if times > 1 else f'{times} time'}\n"
