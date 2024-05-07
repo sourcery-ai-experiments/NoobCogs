@@ -13,7 +13,7 @@ from .converters import (
     DLEmojiConverter,
     MemberOrUserConverter,
 )
-from .exceptions import MoreThanThreeRoles
+from .exceptions import BankConversionFailure, MoreThanThreeRoles
 from .hybrids import HYBRIDS
 from .utilities import verify_amount_roles
 from .views import BankNameModal
@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.8.0",
+            version="1.8.1",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -74,12 +74,14 @@ class DonationLogger(nu.Cog):
 
     async def cog_load(self):
         self.bot.tree.add_command(self.check_member_balance_ctx_menu)
+        self.bot.add_dev_env_value("donationlogger", lambda _: self)
 
     async def cog_unload(self):
         self.bot.tree.remove_command(
             self.check_member_balance_ctx_menu,
             type=self.check_member_balance_ctx_menu.type,
         )
+        self.bot.remove_dev_env_value("donationlogger")
 
     async def check_member_balance_callback(
         self, interaction: discord.Interaction[Red], member: discord.Member
@@ -95,8 +97,15 @@ class DonationLogger(nu.Cog):
         )
         await interaction.response.send_modal(bnmodal)
         await bnmodal.wait()
+        bank_name = bnmodal.bank_name.value
 
-        await HYBRIDS.hybrid_balance(self, interaction, member, bnmodal.bank_name.value)
+        if bank_name:
+            try:
+                bank_name = await BankConverter.transform(interaction, bank_name)
+            except BankConversionFailure as bcf:
+                return await HYBRIDS.hybrid_send(interaction, content=str(bcf), ephemeral=True)
+
+        await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
 
     async def get_dc_from_bank(
         self, context: commands.Context, bank_name: str
