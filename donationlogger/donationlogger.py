@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.8.1",
+            version="1.8.2",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -68,6 +68,8 @@ class DonationLogger(nu.Cog):
         """
         for g in (await self.config.all_guilds()).keys():
             async with self.config.guild_from_id(g).banks() as banks:
+                if not banks:
+                    continue
                 for bank in banks.values():
                     if str(user_id) in bank["donators"]:
                         del bank["donators"][str(user_id)]
@@ -100,10 +102,14 @@ class DonationLogger(nu.Cog):
         bank_name = bnmodal.bank_name.value
 
         if bank_name:
-            try:
-                bank_name = await BankConverter.transform(interaction, bank_name)
-            except BankConversionFailure as bcf:
-                return await HYBRIDS.hybrid_send(interaction, content=str(bcf), ephemeral=True)
+            bank_name = await BankConverter.transform(interaction, bank_name)
+            if isinstance(bank_name, list):
+                if bank_name[1]:
+                    return await HYBRIDS.hybrid_send(
+                        content=bank_name[0], ephemeral=True
+                    )
+                else:
+                    return await HYBRIDS.hybrid_send(content=bank_name[0])
 
         await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
 
