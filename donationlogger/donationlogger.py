@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.8.2",
+            version="1.8.3",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -106,10 +106,10 @@ class DonationLogger(nu.Cog):
             if isinstance(bank_name, list):
                 if bank_name[1]:
                     return await HYBRIDS.hybrid_send(
-                        content=bank_name[0], ephemeral=True
+                        interaction, content=bank_name[0], ephemeral=True
                     )
                 else:
-                    return await HYBRIDS.hybrid_send(content=bank_name[0])
+                    return await HYBRIDS.hybrid_send(interaction, content=bank_name[0])
 
         await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
 
