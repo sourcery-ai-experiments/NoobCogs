@@ -16,6 +16,7 @@ from .converters import (
 from .exceptions import MoreThanThreeRoles
 from .hybrids import HYBRIDS
 from .utilities import verify_amount_roles
+from .views import BankNameModal
 
 
 DEFAULT_GUILD = {
@@ -38,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.7.0",
+            version="1.8.0",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -47,6 +48,11 @@ class DonationLogger(nu.Cog):
             **kwargs,
         )
         self.config.register_guild(**DEFAULT_GUILD)
+        self.check_member_balance_ctx_menu = app_commands.ContextMenu(
+            name="DonationLogger Balance",
+            callback=self.check_member_balance_callback,
+            type=discord.AppCommandType.user,
+        )
         self.setupcache = []
 
     async def red_delete_data_for_user(
@@ -63,10 +69,34 @@ class DonationLogger(nu.Cog):
         for g in (await self.config.all_guilds()).keys():
             async with self.config.guild_from_id(g).banks() as banks:
                 for bank in banks.values():
-                    try:
+                    if str(user_id) in bank["donators"]:
                         del bank["donators"][str(user_id)]
-                    except KeyError:
-                        continue
+
+    async def cog_load(self):
+        self.bot.tree.add_command(self.check_member_balance_ctx_menu)
+
+    async def cog_unload(self):
+        self.bot.tree.remove_command(
+            self.check_member_balance_ctx_menu,
+            type=self.check_member_balance_ctx_menu.type,
+        )
+
+    async def check_member_balance_callback(
+        self, interaction: discord.Interaction[Red], member: discord.Member
+    ):
+        if member.bot:
+            return await interaction.response.send_message(
+                content="Bots are prohibited from donations. (For obvious reasons)",
+                ephemeral=True,
+            )
+
+        bnmodal = BankNameModal(
+            title="Would you like to check a specific bank?", timeout=30.0
+        )
+        await interaction.response.send_modal(bnmodal)
+        await bnmodal.wait()
+
+        await HYBRIDS.hybrid_balance(self, interaction, member, bnmodal.bank_name.value)
 
     async def get_dc_from_bank(
         self, context: commands.Context, bank_name: str

@@ -426,3 +426,16 @@ class TotalDonoView(discord.ui.View):
             x.disabled = True
         await self.message.edit(view=self)
         self.stop()
+
+
+class BankNameModal(discord.ui.Modal):
+    bank_name = discord.ui.TextInput(
+        label="Bank Name: (optional)",
+        style=discord.TextStyle.short,
+        required=False,
+        placeholder="Ex: dank",
+        max_length=50,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction[Red]) -> None:
+        await interaction.response.defer()

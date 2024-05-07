@@ -7,7 +7,11 @@ from noobutils import NoobEmojiConverter
 from typing import List, TYPE_CHECKING, Union
 
 from .checks import check_if_is_a_dono_manager_or_higher, check_if_setup_done
-from .exceptions import BankConversionFailure, AmountConversionFailure, MemberOrUserNotFound
+from .exceptions import (
+    BankConversionFailure,
+    AmountConversionFailure,
+    MemberOrUserNotFound,
+)
 
 if TYPE_CHECKING:
     from . import DonationLogger
@@ -70,6 +74,8 @@ class DLEmojiConverter(NoobEmojiConverter):
 
 
 class MemberOrUserConverter(app_commands.Transformer):
+    bot: bool
+
     @classmethod
     async def convert(
         cls, ctx: commands.Context, argument: str
