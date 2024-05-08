@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.11.0",
+            version="1.11.1",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -120,13 +120,13 @@ class DonationLogger(nu.Cog):
         )
         self.bot.tree.remove_command(
             self.set_member_donation_ctx_menu,
-            type=self.set_member_donation_ctx_menu.type
+            type=self.set_member_donation_ctx_menu.type,
         )
         self.bot.remove_dev_env_value("donationlogger")
 
     async def donationlogger_ctx_callback(
         self, interaction: discord.Interaction[Red], member: discord.Member
-    ):
+    ):  # sourcery skip: low-code-quality
         if member.bot:
             return await interaction.response.send_message(
                 content="Bots are prohibited from donations. (For obvious reasons)",
@@ -152,23 +152,21 @@ class DonationLogger(nu.Cog):
                         interaction, content=bank_name[0], ephemeral=bank_name[1]
                     )
 
-            hyb = (
+            hyb_func = (
                 HYBRIDS.hybrid_resetuser
                 if cmd_name == "DonationLogger ResetUser"
                 else HYBRIDS.hybrid_balance
             )
-            await hyb(self, interaction, member, bank_name)
+            await hyb_func(self, interaction, member, bank_name)
         elif cmd_name in [
             "DonationLogger Add",
             "DonationLogger Remove",
-            "DonationLogger Set"
+            "DonationLogger Set",
         ]:
             t = (
                 "Add"
                 if cmd_name == "DonationLogger Add"
-                else "Remove"
-                if cmd_name == "DonationLogger Remove"
-                else "Set"
+                else "Remove" if cmd_name == "DonationLogger Remove" else "Set"
             )
             dlamodal = DonoAddOrRemoveCtxMenu(
                 title=f"{t} member donation balance.", timeout=60.0
@@ -191,14 +189,18 @@ class DonationLogger(nu.Cog):
                     interaction, content=amount[0], ephemeral=amount[1]
                 )
 
-            hyb = (
+            hyb_func = (
                 HYBRIDS.hybrid_add
                 if cmd_name == "DonationLogger Add"
-                else HYBRIDS.hybrid_remove
-                if cmd_name == "DonationLogger Remove"
-                else HYBRIDS.hybrid_set
+                else (
+                    HYBRIDS.hybrid_remove
+                    if cmd_name == "DonationLogger Remove"
+                    else HYBRIDS.hybrid_set
+                )
             )
-            await hyb(self, interaction, bank_name, amount, member, dlamodal.note.value)
+            await hyb_func(
+                self, interaction, bank_name, amount, member, dlamodal.note.value
+            )
 
     async def get_dc_from_bank(
         self, context: commands.Context, bank_name: str
@@ -638,7 +640,7 @@ class DonationLogger(nu.Cog):
         amount: AmountConverter,
         member: Optional[discord.Member] = None,
         *,
-        note: str = None
+        note: str = None,
     ):
         """
         Set someone's donation balance to the amount of your choice.
@@ -1364,7 +1366,7 @@ class DonationLogger(nu.Cog):
         bank_name: app_commands.Transform[str, BankConverter],
         amount: app_commands.Transform[str, AmountConverter],
         member: Optional[discord.Member],
-        note: Optional[str]
+        note: Optional[str],
     ):
         """_summary_
 
