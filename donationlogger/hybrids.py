@@ -508,6 +508,7 @@ class HYBRIDS:
         bank_name: str,
         amount: int,
         member: discord.Member,
+        note: str = None
     ):
         if isinstance(obj, discord.Interaction):
             if not obj.channel.permissions_for(obj.guild.me).embed_links:
@@ -559,6 +560,10 @@ class HYBRIDS:
                 colour=member.colour,
                 timestamp=discord.utils.utcnow(),
             )
+            if note:
+                embed.add_field(
+                    name="Note:", value=note, inline=False
+                )
             if humanized_roles:
                 embed.add_field(
                     name="Added/Removed Donation Roles:",

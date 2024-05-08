@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.10.1",
+            version="1.11.0",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -65,6 +65,11 @@ class DonationLogger(nu.Cog):
         )
         self.resetuser_ctx_menu = app_commands.ContextMenu(
             name="DonationLogger ResetUser",
+            callback=self.donationlogger_ctx_callback,
+            type=discord.AppCommandType.user,
+        )
+        self.set_member_donation_ctx_menu = app_commands.ContextMenu(
+            name="DonationLogger Set",
             callback=self.donationlogger_ctx_callback,
             type=discord.AppCommandType.user,
         )
@@ -94,6 +99,7 @@ class DonationLogger(nu.Cog):
         self.bot.tree.add_command(self.add_member_donation_ctx_menu)
         self.bot.tree.add_command(self.remove_member_donation_ctx_menu)
         self.bot.tree.add_command(self.resetuser_ctx_menu)
+        self.bot.tree.add_command(self.set_member_donation_ctx_menu)
         self.bot.add_dev_env_value("donationlogger", lambda _: self)
 
     async def cog_unload(self):
@@ -111,6 +117,10 @@ class DonationLogger(nu.Cog):
         )
         self.bot.tree.remove_command(
             self.resetuser_ctx_menu, type=self.resetuser_ctx_menu.type
+        )
+        self.bot.tree.remove_command(
+            self.set_member_donation_ctx_menu,
+            type=self.set_member_donation_ctx_menu.type
         )
         self.bot.remove_dev_env_value("donationlogger")
 
@@ -148,8 +158,18 @@ class DonationLogger(nu.Cog):
                 else HYBRIDS.hybrid_balance
             )
             await hyb(self, interaction, member, bank_name)
-        elif cmd_name in ["DonationLogger Add", "DonationLogger Remove"]:
-            t = "Add" if cmd_name == "DonationLogger Add" else "Remove"
+        elif cmd_name in [
+            "DonationLogger Add",
+            "DonationLogger Remove",
+            "DonationLogger Set"
+        ]:
+            t = (
+                "Add"
+                if cmd_name == "DonationLogger Add"
+                else "Remove"
+                if cmd_name == "DonationLogger Remove"
+                else "Set"
+            )
             dlamodal = DonoAddOrRemoveCtxMenu(
                 title=f"{t} member donation balance.", timeout=60.0
             )
@@ -175,6 +195,8 @@ class DonationLogger(nu.Cog):
                 HYBRIDS.hybrid_add
                 if cmd_name == "DonationLogger Add"
                 else HYBRIDS.hybrid_remove
+                if cmd_name == "DonationLogger Remove"
+                else HYBRIDS.hybrid_set
             )
             await hyb(self, interaction, bank_name, amount, member, dlamodal.note.value)
 
@@ -614,7 +636,9 @@ class DonationLogger(nu.Cog):
         context: commands.Context,
         bank_name: BankConverter,
         amount: AmountConverter,
-        member: discord.Member = None,
+        member: Optional[discord.Member] = None,
+        *,
+        note: str = None
     ):
         """
         Set someone's donation balance to the amount of your choice.
@@ -625,8 +649,12 @@ class DonationLogger(nu.Cog):
             return await context.send(
                 content="Bots are prohibited from donations. (For obvious reasons)"
             )
+        if note and len(note) > 1024:
+            return await context.send(
+                content="Limit your note into 1024 characters due to embed field limits."
+            )
 
-        await HYBRIDS.hybrid_set(self, context, bank_name, amount, member)
+        await HYBRIDS.hybrid_set(self, context, bank_name, amount, member, note)
 
     @commands.group(
         name="donationloggerset", aliases=["dlset", "donologset", "donoset"]
@@ -1336,6 +1364,7 @@ class DonationLogger(nu.Cog):
         bank_name: app_commands.Transform[str, BankConverter],
         amount: app_commands.Transform[str, AmountConverter],
         member: Optional[discord.Member],
+        note: Optional[str]
     ):
         """_summary_
 
@@ -1351,6 +1380,10 @@ class DonationLogger(nu.Cog):
             return await interaction.response.send_message(
                 content="Bots are prohibited from donations. (For obvious reasons)"
             )
+        if note and len(note) > 1024:
+            return await interaction.response.send_message(
+                content="Limit your note into 1024 characters due to embed field limits."
+            )
         if isinstance(bank_name, list):
             return await interaction.response.send_message(
                 content=bank_name[0], ephemeral=bank_name[1]
@@ -1359,4 +1392,4 @@ class DonationLogger(nu.Cog):
             return await interaction.response.send_message(
                 content=amount[0], ephemeral=amount[1]
             )
-        await HYBRIDS.hybrid_set(self, interaction, bank_name, amount, member)
+        await HYBRIDS.hybrid_set(self, interaction, bank_name, amount, member, note)
