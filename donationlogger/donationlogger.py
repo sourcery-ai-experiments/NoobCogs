@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.10.0",
+            version="1.10.1",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -128,7 +128,7 @@ class DonationLogger(nu.Cog):
             title = (
                 "Would you like to check a specific bank?"
                 if cmd_name == "DonationLogger Balance"
-                else "Reset this member's donation balance. Input a bank name to reset that specific bank."
+                else "Reset this member's donation balance."
             )
             dlrumodal = BankNameModal(title=title, timeout=60.0)
             await interaction.response.send_modal(dlrumodal)
