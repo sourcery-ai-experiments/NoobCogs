@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.9.1",
+            version="1.10.0",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -60,6 +60,11 @@ class DonationLogger(nu.Cog):
         )
         self.remove_member_donation_ctx_menu = app_commands.ContextMenu(
             name="DonationLogger Remove",
+            callback=self.donationlogger_ctx_callback,
+            type=discord.AppCommandType.user,
+        )
+        self.resetuser_ctx_menu = app_commands.ContextMenu(
+            name="DonationLogger ResetUser",
             callback=self.donationlogger_ctx_callback,
             type=discord.AppCommandType.user,
         )
@@ -88,6 +93,7 @@ class DonationLogger(nu.Cog):
         self.bot.tree.add_command(self.check_member_balance_ctx_menu)
         self.bot.tree.add_command(self.add_member_donation_ctx_menu)
         self.bot.tree.add_command(self.remove_member_donation_ctx_menu)
+        self.bot.tree.add_command(self.resetuser_ctx_menu)
         self.bot.add_dev_env_value("donationlogger", lambda _: self)
 
     async def cog_unload(self):
@@ -103,6 +109,9 @@ class DonationLogger(nu.Cog):
             self.remove_member_donation_ctx_menu,
             type=self.remove_member_donation_ctx_menu.type,
         )
+        self.bot.tree.remove_command(
+            self.resetuser_ctx_menu, type=self.resetuser_ctx_menu.type
+        )
         self.bot.remove_dev_env_value("donationlogger")
 
     async def donationlogger_ctx_callback(
@@ -115,9 +124,34 @@ class DonationLogger(nu.Cog):
             )
         cmd_name = interaction.command.qualified_name
 
-        if cmd_name == "DonationLogger Add":
+        if cmd_name in ["DonationLogger ResetUser", "DonationLogger Balance"]:
+            title = (
+                "Would you like to check a specific bank?"
+                if cmd_name == "DonationLogger Balance"
+                else "Reset this member's donation balance. Input a bank name to reset that specific bank."
+            )
+            dlrumodal = BankNameModal(title=title, timeout=60.0)
+            await interaction.response.send_modal(dlrumodal)
+            await dlrumodal.wait()
+            bank_name = dlrumodal.bank_name.value
+
+            if bank_name:
+                bank_name = await BankConverter.transform(interaction, bank_name)
+                if isinstance(bank_name, list):
+                    return await HYBRIDS.hybrid_send(
+                        interaction, content=bank_name[0], ephemeral=bank_name[1]
+                    )
+
+            hyb = (
+                HYBRIDS.hybrid_resetuser
+                if cmd_name == "DonationLogger ResetUser"
+                else HYBRIDS.hybrid_balance
+            )
+            await hyb(self, interaction, member, bank_name)
+        elif cmd_name in ["DonationLogger Add", "DonationLogger Remove"]:
+            t = "Add" if cmd_name == "DonationLogger Add" else "Remove"
             dlamodal = DonoAddOrRemoveCtxMenu(
-                title="Add member donation balance.", timeout=60.0
+                title=f"{t} member donation balance.", timeout=60.0
             )
             await interaction.response.send_modal(dlamodal)
             await dlamodal.wait()
@@ -136,48 +170,13 @@ class DonationLogger(nu.Cog):
                 return await HYBRIDS.hybrid_send(
                     interaction, content=amount[0], ephemeral=amount[1]
                 )
-            await HYBRIDS.hybrid_add(
-                self, interaction, bank_name, amount, member, dlamodal.note.value
-            )
-        elif cmd_name == "DonationLogger Remove":
-            dlrmodal = DonoAddOrRemoveCtxMenu(
-                title="Remove member donation balance.", timeout=60.0
-            )
-            await interaction.response.send_modal(dlrmodal)
-            await dlrmodal.wait()
-            bank_name = dlrmodal.bank_name.value
-            amount = dlrmodal.amount.value
 
-            if not bank_name or not amount:
-                return
-            bank_name = await BankConverter.transform(interaction, bank_name)
-            if isinstance(bank_name, list):
-                return await HYBRIDS.hybrid_send(
-                    interaction, content=bank_name[0], ephemeral=bank_name[1]
-                )
-            amount = await AmountConverter.transform(interaction, amount)
-            if isinstance(amount, list):
-                return await HYBRIDS.hybrid_send(
-                    interaction, content=amount[0], ephemeral=amount[1]
-                )
-            await HYBRIDS.hybrid_remove(
-                self, interaction, bank_name, amount, member, dlrmodal.note.value
+            hyb = (
+                HYBRIDS.hybrid_add
+                if cmd_name == "DonationLogger Add"
+                else HYBRIDS.hybrid_remove
             )
-        elif cmd_name == "DonationLogger Balance":
-            bnmodal = BankNameModal(
-                title="Would you like to check a specific bank?", timeout=30.0
-            )
-            await interaction.response.send_modal(bnmodal)
-            await bnmodal.wait()
-            bank_name = bnmodal.bank_name.value
-
-            if bank_name:
-                bank_name = await BankConverter.transform(interaction, bank_name)
-                if isinstance(bank_name, list):
-                    return await HYBRIDS.hybrid_send(
-                        interaction, content=bank_name[0], ephemeral=bank_name[1]
-                    )
-            await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
+            await hyb(self, interaction, bank_name, amount, member, dlamodal.note.value)
 
     async def get_dc_from_bank(
         self, context: commands.Context, bank_name: str

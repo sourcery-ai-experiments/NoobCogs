@@ -440,6 +440,7 @@ class BankNameModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction[Red]) -> None:
         await interaction.response.defer()
 
+
 class DonoAddOrRemoveCtxMenu(discord.ui.Modal):
     bank_name = discord.ui.TextInput(
         label="Bank Name:",
