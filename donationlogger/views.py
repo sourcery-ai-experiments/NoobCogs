@@ -439,3 +439,27 @@ class BankNameModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction[Red]) -> None:
         await interaction.response.defer()
+
+class DonoAddOrRemoveCtxMenu(discord.ui.Modal):
+    bank_name = discord.ui.TextInput(
+        label="Bank Name:",
+        style=discord.TextStyle.short,
+        placeholder="Ex: dank",
+        max_length=50,
+    )
+    amount = discord.ui.TextInput(
+        label="Amount:",
+        style=discord.TextStyle.short,
+        placeholder="Ex: 1.5m",
+        max_length=50,
+    )
+    note = discord.ui.TextInput(
+        label="Note: (optional)",
+        style=discord.TextStyle.long,
+        required=False,
+        placeholder="Ex: TY for donating.",
+        max_length=1024,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction[Red]) -> None:
+        await interaction.response.defer()

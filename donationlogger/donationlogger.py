@@ -13,10 +13,10 @@ from .converters import (
     DLEmojiConverter,
     MemberOrUserConverter,
 )
-from .exceptions import BankConversionFailure, MoreThanThreeRoles
+from .exceptions import MoreThanThreeRoles
 from .hybrids import HYBRIDS
 from .utilities import verify_amount_roles
-from .views import BankNameModal
+from .views import BankNameModal, DonoAddOrRemoveCtxMenu
 
 
 DEFAULT_GUILD = {
@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.8.3",
+            version="1.9.0",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -50,8 +50,13 @@ class DonationLogger(nu.Cog):
         self.config.register_guild(**DEFAULT_GUILD)
         self.check_member_balance_ctx_menu = app_commands.ContextMenu(
             name="DonationLogger Balance",
-            callback=self.check_member_balance_callback,
+            callback=self.donationlogger_ctx_callback,
             type=discord.AppCommandType.user,
+        )
+        self.add_member_balance_ctx_menu = app_commands.ContextMenu(
+            name="DonationLogger Add",
+            callback=self.donationlogger_ctx_callback,
+            type=discord.AppCommandType.user
         )
         self.setupcache = []
 
@@ -76,6 +81,7 @@ class DonationLogger(nu.Cog):
 
     async def cog_load(self):
         self.bot.tree.add_command(self.check_member_balance_ctx_menu)
+        self.bot.tree.add_command(self.add_member_balance_ctx_menu)
         self.bot.add_dev_env_value("donationlogger", lambda _: self)
 
     async def cog_unload(self):
@@ -83,9 +89,13 @@ class DonationLogger(nu.Cog):
             self.check_member_balance_ctx_menu,
             type=self.check_member_balance_ctx_menu.type,
         )
+        self.bot.tree.remove_command(
+            self.add_member_balance_ctx_menu,
+            type=self.add_member_balance_ctx_menu.type
+        )
         self.bot.remove_dev_env_value("donationlogger")
 
-    async def check_member_balance_callback(
+    async def donationlogger_ctx_callback(
         self, interaction: discord.Interaction[Red], member: discord.Member
     ):
         if member.bot:
@@ -93,25 +103,43 @@ class DonationLogger(nu.Cog):
                 content="Bots are prohibited from donations. (For obvious reasons)",
                 ephemeral=True,
             )
+        cmd_name = interaction.command.qualified_name
 
-        bnmodal = BankNameModal(
-            title="Would you like to check a specific bank?", timeout=30.0
-        )
-        await interaction.response.send_modal(bnmodal)
-        await bnmodal.wait()
-        bank_name = bnmodal.bank_name.value
+        if cmd_name == "DonationLogger Add":
+            dlamodal = DonoAddOrRemoveCtxMenu(title="Add member donation balance.", timeout=60.0)
+            await interaction.response.send_modal(dlamodal)
+            await dlamodal.wait()
+            bank_name = dlamodal.bank_name.value
+            amount = dlamodal.amount.value
 
-        if bank_name:
+            if not bank_name or not amount:
+                return
             bank_name = await BankConverter.transform(interaction, bank_name)
             if isinstance(bank_name, list):
-                if bank_name[1]:
-                    return await HYBRIDS.hybrid_send(
-                        interaction, content=bank_name[0], ephemeral=True
-                    )
-                else:
-                    return await HYBRIDS.hybrid_send(interaction, content=bank_name[0])
+                return await HYBRIDS.hybrid_send(
+                    interaction, content=bank_name[0], ephemeral=bank_name[1]
+                )
+            amount = await AmountConverter.transform(interaction, amount)
+            if isinstance(amount, list):
+                return await HYBRIDS.hybrid_send(
+                    interaction, content=amount[0], ephemeral=amount[1]
+                )
+            await HYBRIDS.hybrid_add(self, interaction, bank_name, amount, member, dlamodal.note.value)
+        elif cmd_name == "DonationLogger Balance":
+            bnmodal = BankNameModal(
+                title="Would you like to check a specific bank?", timeout=30.0
+            )
+            await interaction.response.send_modal(bnmodal)
+            await bnmodal.wait()
+            bank_name = bnmodal.bank_name.value
 
-        await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
+            if bank_name:
+                bank_name = await BankConverter.transform(interaction, bank_name)
+                if isinstance(bank_name, list):
+                    return await HYBRIDS.hybrid_send(
+                        interaction, content=bank_name[0], ephemeral=bank_name[1]
+                    )
+            await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
 
     async def get_dc_from_bank(
         self, context: commands.Context, bank_name: str
@@ -1051,12 +1079,9 @@ class DonationLogger(nu.Cog):
                 content="Bots are not allowed."
             )
         if isinstance(bank_name, list):
-            if bank_name[1]:
-                return await interaction.response.send_message(
-                    content=bank_name[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=bank_name[0])
+            return await interaction.response.send_message(
+                content=bank_name[0], ephemeral=bank_name[1]
+            )
         await HYBRIDS.hybrid_resetuser(self, interaction, user, bank_name)
 
     @slash_donologger.command(
@@ -1086,12 +1111,9 @@ class DonationLogger(nu.Cog):
                 content="Bots are not allowed."
             )
         if isinstance(bank_name, list):
-            if bank_name[1]:
-                return await interaction.response.send_message(
-                    content=bank_name[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=bank_name[0])
+            return await interaction.response.send_message(
+                content=bank_name[0], ephemeral=bank_name[1]
+            )
         if isinstance(member, discord.Member):
             await HYBRIDS.hybrid_balance(self, interaction, member, bank_name)
         else:
@@ -1124,19 +1146,13 @@ class DonationLogger(nu.Cog):
             amount (Optional[app_commands.Transform[str, AmountConverter]]): _description_
         """
         if isinstance(bank_name, list):
-            if bank_name[1]:
-                return await interaction.response.send_message(
-                    content=bank_name[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=bank_name[0])
+            return await interaction.response.send_message(
+                content=bank_name[0], ephemeral=bank_name[1]
+            )
         if isinstance(amount, list):
-            if amount[1]:
-                return await interaction.response.send_message(
-                    content=amount[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=amount[0])
+            return await interaction.response.send_message(
+                content=amount[0], ephemeral=amount[1]
+            )
         if mla.lower() != "all" and not amount:
             return await interaction.response.send_message(
                 content="You need to pass an amount if you choose to check more or less."
@@ -1168,12 +1184,9 @@ class DonationLogger(nu.Cog):
             top (app_commands.Range[int, 1, 25]): _description_
         """
         if isinstance(bank_name, list):
-            if bank_name[1]:
-                return await interaction.response.send_message(
-                    content=bank_name[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=bank_name[0])
+            return await interaction.response.send_message(
+                content=bank_name[0], ephemeral=bank_name[1]
+            )
         await HYBRIDS.hybrid_leaderboard(
             self, interaction, bank_name, top, show_left_users
         )
@@ -1215,19 +1228,13 @@ class DonationLogger(nu.Cog):
                 content="Limit your note into 1024 characters due to embed field limits."
             )
         if isinstance(bank_name, list):
-            if bank_name[1]:
-                return await interaction.response.send_message(
-                    content=bank_name[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=bank_name[0])
+            return await interaction.response.send_message(
+                content=bank_name[0], ephemeral=bank_name[1]
+            )
         if isinstance(amount, list):
-            if amount[1]:
-                return await interaction.response.send_message(
-                    content=amount[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=amount[0])
+            return await interaction.response.send_message(
+                content=amount[0], ephemeral=amount[1]
+            )
         await HYBRIDS.hybrid_add(self, interaction, bank_name, amount, member, note)
 
     @slash_donologger.command(
@@ -1268,19 +1275,13 @@ class DonationLogger(nu.Cog):
                 content="Limit your note into 1024 characters due to embed field limits."
             )
         if isinstance(bank_name, list):
-            if bank_name[1]:
-                return await interaction.response.send_message(
-                    content=bank_name[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=bank_name[0])
+            return await interaction.response.send_message(
+                content=bank_name[0], ephemeral=bank_name[1]
+            )
         if isinstance(amount, list):
-            if amount[1]:
-                return await interaction.response.send_message(
-                    content=amount[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=amount[0])
+            return await interaction.response.send_message(
+                content=amount[0], ephemeral=amount[1]
+            )
         await HYBRIDS.hybrid_remove(self, interaction, bank_name, amount, member, note)
 
     @slash_donologger.command(
@@ -1314,17 +1315,11 @@ class DonationLogger(nu.Cog):
                 content="Bots are prohibited from donations. (For obvious reasons)"
             )
         if isinstance(bank_name, list):
-            if bank_name[1]:
-                return await interaction.response.send_message(
-                    content=bank_name[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=bank_name[0])
+            return await interaction.response.send_message(
+                content=bank_name[0], ephemeral=bank_name[1]
+            )
         if isinstance(amount, list):
-            if amount[1]:
-                return await interaction.response.send_message(
-                    content=amount[0], ephemeral=True
-                )
-            else:
-                return await interaction.response.send_message(content=amount[0])
+            return await interaction.response.send_message(
+                content=amount[0], ephemeral=amount[1]
+            )
         await HYBRIDS.hybrid_set(self, interaction, bank_name, amount, member)
