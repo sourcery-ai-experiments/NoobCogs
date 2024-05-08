@@ -109,7 +109,7 @@ class HYBRIDS:
                     content='I require the "Embed Links" permission to run this command.',
                     ephemeral=True,
                 )
-            if not check_if_setup_done(obj):
+            if not await check_if_setup_done(obj):
                 return await cls.hybrid_send(
                     obj,
                     content="DonationLogger has not been setup in this guild yet.",
@@ -339,7 +339,7 @@ class HYBRIDS:
                     content='I require the "Embed Links" permission to run this command.',
                     ephemeral=True,
                 )
-            if not check_if_setup_done(obj):
+            if not await check_if_setup_done(obj):
                 return await cls.hybrid_send(
                     obj,
                     content="DonationLogger has not been setup in this guild yet.",
@@ -429,7 +429,7 @@ class HYBRIDS:
                     content='I require the "Embed Links" permission to run this command.',
                     ephemeral=True,
                 )
-            if not check_if_setup_done(obj):
+            if not await check_if_setup_done(obj):
                 return await cls.hybrid_send(
                     obj,
                     content="DonationLogger has not been setup in this guild yet.",
@@ -516,7 +516,7 @@ class HYBRIDS:
                     content='I require the "Embed Links" permission to run this command.',
                     ephemeral=True,
                 )
-            if not check_if_setup_done(obj):
+            if not await check_if_setup_done(obj):
                 return await cls.hybrid_send(
                     obj,
                     content="DonationLogger has not been setup in this guild yet.",

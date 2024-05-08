@@ -60,7 +60,7 @@ class AmountConverter(app_commands.Transformer):
                 "You need to be a donationlogger manager or higher to run this command.",
                 True,
             ]
-        context = interaction.client.get_context(interaction)
+        context = await interaction.client.get_context(interaction)
         try:
             return await cls.convert(context, value)
         except AmountConversionFailure as e:

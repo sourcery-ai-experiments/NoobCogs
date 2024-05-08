@@ -53,10 +53,15 @@ class DonationLogger(nu.Cog):
             callback=self.donationlogger_ctx_callback,
             type=discord.AppCommandType.user,
         )
-        self.add_member_balance_ctx_menu = app_commands.ContextMenu(
+        self.add_member_donation_ctx_menu = app_commands.ContextMenu(
             name="DonationLogger Add",
             callback=self.donationlogger_ctx_callback,
-            type=discord.AppCommandType.user
+            type=discord.AppCommandType.user,
+        )
+        self.remove_member_donation_ctx_menu = app_commands.ContextMenu(
+            name="DonationLogger Remove",
+            callback=self.donationlogger_ctx_callback,
+            type=discord.AppCommandType.user,
         )
         self.setupcache = []
 
@@ -81,7 +86,8 @@ class DonationLogger(nu.Cog):
 
     async def cog_load(self):
         self.bot.tree.add_command(self.check_member_balance_ctx_menu)
-        self.bot.tree.add_command(self.add_member_balance_ctx_menu)
+        self.bot.tree.add_command(self.add_member_donation_ctx_menu)
+        self.bot.tree.add_command(self.remove_member_donation_ctx_menu)
         self.bot.add_dev_env_value("donationlogger", lambda _: self)
 
     async def cog_unload(self):
@@ -90,8 +96,12 @@ class DonationLogger(nu.Cog):
             type=self.check_member_balance_ctx_menu.type,
         )
         self.bot.tree.remove_command(
-            self.add_member_balance_ctx_menu,
-            type=self.add_member_balance_ctx_menu.type
+            self.add_member_donation_ctx_menu,
+            type=self.add_member_donation_ctx_menu.type,
+        )
+        self.bot.tree.remove_command(
+            self.remove_member_donation_ctx_menu,
+            type=self.remove_member_donation_ctx_menu.type,
         )
         self.bot.remove_dev_env_value("donationlogger")
 
@@ -106,7 +116,9 @@ class DonationLogger(nu.Cog):
         cmd_name = interaction.command.qualified_name
 
         if cmd_name == "DonationLogger Add":
-            dlamodal = DonoAddOrRemoveCtxMenu(title="Add member donation balance.", timeout=60.0)
+            dlamodal = DonoAddOrRemoveCtxMenu(
+                title="Add member donation balance.", timeout=60.0
+            )
             await interaction.response.send_modal(dlamodal)
             await dlamodal.wait()
             bank_name = dlamodal.bank_name.value
@@ -124,7 +136,33 @@ class DonationLogger(nu.Cog):
                 return await HYBRIDS.hybrid_send(
                     interaction, content=amount[0], ephemeral=amount[1]
                 )
-            await HYBRIDS.hybrid_add(self, interaction, bank_name, amount, member, dlamodal.note.value)
+            await HYBRIDS.hybrid_add(
+                self, interaction, bank_name, amount, member, dlamodal.note.value
+            )
+        elif cmd_name == "DonationLogger Remove":
+            dlrmodal = DonoAddOrRemoveCtxMenu(
+                title="Remove member donation balance.", timeout=60.0
+            )
+            await interaction.response.send_modal(dlamodal)
+            await dlrmodal.wait()
+            bank_name = dlrmodal.bank_name.value
+            amount = dlrmodal.amount.value
+
+            if not bank_name or not amount:
+                return
+            bank_name = await BankConverter.transform(interaction, bank_name)
+            if isinstance(bank_name, list):
+                return await HYBRIDS.hybrid_send(
+                    interaction, content=bank_name[0], ephemeral=bank_name[1]
+                )
+            amount = await AmountConverter.transform(interaction, amount)
+            if isinstance(amount, list):
+                return await HYBRIDS.hybrid_send(
+                    interaction, content=amount[0], ephemeral=amount[1]
+                )
+            await HYBRIDS.hybrid_remove(
+                self, interaction, bank_name, amount, member, dlrmodal.note.value
+            )
         elif cmd_name == "DonationLogger Balance":
             bnmodal = BankNameModal(
                 title="Would you like to check a specific bank?", timeout=30.0
