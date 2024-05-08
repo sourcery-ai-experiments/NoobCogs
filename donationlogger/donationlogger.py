@@ -39,7 +39,7 @@ class DonationLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.9.0",
+            version="1.9.1",
             authors=["NoobInDaHause"],
             use_config=True,
             identifier=657668242451927167510,
@@ -143,7 +143,7 @@ class DonationLogger(nu.Cog):
             dlrmodal = DonoAddOrRemoveCtxMenu(
                 title="Remove member donation balance.", timeout=60.0
             )
-            await interaction.response.send_modal(dlamodal)
+            await interaction.response.send_modal(dlrmodal)
             await dlrmodal.wait()
             bank_name = dlrmodal.bank_name.value
             amount = dlrmodal.amount.value
