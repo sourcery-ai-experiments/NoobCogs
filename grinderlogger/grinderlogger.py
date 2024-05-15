@@ -32,7 +32,7 @@ DEFAULT_MEMBER = {
     "donations": 0,
     "times_as_grinder": 0,
     "last_time_as_grinder": None,
-    "reason_for_left": None
+    "reason_for_left": None,
 }
 
 
@@ -47,7 +47,7 @@ class GrinderLogger(nu.Cog):
         super().__init__(
             bot=bot,
             cog_name=self.__class__.__name__,
-            version="1.2.5",
+            version="1.3.0",
             authors=["NoobInDaHause"],
             use_config=True,
             force_registration=True,
@@ -234,7 +234,7 @@ class GrinderLogger(nu.Cog):
             dms_off.append(True)
         if not channels["notifying"]:
             return
-        
+
         notifchan = guild.get_channel_or_thread(channels["notifying"])
         with contextlib.suppress(
             (discord.errors.Forbidden, discord.errors.HTTPException)
@@ -1157,6 +1157,31 @@ class GrinderLogger(nu.Cog):
         GrinderLogger settings commands.
         """
         pass
+
+    @grinderloggerset.command(name="editreason")
+    async def grinderloggerset_editreason(
+        self,
+        context: commands.Context,
+        member: Union[discord.Member, discord.User],
+        *,
+        reason: str = None,
+    ):
+        """
+        Edit the reason why you removed a former grinder.
+        """
+        if member.bot:
+            return await context.send(content="Bots are not allowed.")
+        if reason and len(reason) > 2000:
+            return await context.send(
+                content="Limit your damn reason to 2k characters."
+            )
+        if self.data.get(str(context.guild.id), {}).get(str(member.id)):
+            return await context.send(content="This member is not a former grinder.")
+
+        await self.config.member_from_ids(
+            context.guild.id, member.id
+        ).reason_for_left.set(reason)
+        await context.send(content="Successfully editted that members removed reason.")
 
     @grinderloggerset.command(name="donationloggersupport", aliases=["dlsupport"])
     async def grinderloggerset_donationloggersupport(
