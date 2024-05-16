@@ -1,6 +1,6 @@
 {
     "name": "NoobTools",
-    "short": "NoobInDaHause's personal tools..",
+    "short": "NoobInDaHause's personal tools.",
     "description": "Too lazy to think of a description, feel free to make a pr on my repo to change this.",
     "end_user_data_statement": "This cog does not store any end user data whatsoever.",
     "install_msg": "Thank you for installing NoobTools. Load the cog with `[p]load noobtools`.",
@@ -12,7 +12,7 @@
     "disabled": false,
     "required_cogs": {},
     "requirements": [
-        "amari.py",
+        "amari",
         "git+https://github.com/NoobInDaHause/noobutils.git"
     ],
     "tags": [
