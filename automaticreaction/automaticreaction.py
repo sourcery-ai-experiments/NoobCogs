@@ -5,7 +5,7 @@ import re
 
 from redbot.core.bot import commands, Red
 
-from typing import Literal, Sequence
+from typing import Literal
 
 DEFAULT_GUILD = {"autoreactions": {}}
 
