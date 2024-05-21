@@ -1,3 +1,4 @@
+import asyncio
 import discord
 import noobutils as nu
 import re
@@ -41,11 +42,12 @@ class AutomaticReaction(nu.Cog):
 
     @staticmethod
     def contains_word(string: str, word: str) -> bool:
-        pattern = r"\b{}\b".format(re.escape(word))
+        pattern = re.escape(word)
         return bool(re.search(pattern, string))
 
     @commands.Cog.listener(name="on_message")
     async def auto_reaction_listener(self, message: discord.Message):
+        await asyncio.sleep(1.5)
         if (
             not message.guild
             or await self.bot.cog_disabled_in_guild(self, message.guild)
