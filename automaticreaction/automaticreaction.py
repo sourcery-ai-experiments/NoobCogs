@@ -127,6 +127,8 @@ class AutomaticReaction(nu.Cog):
         See the list of automatic reactions.
         """
         ar = await self.config.guild(context.guild).autoreactions()
+        if not ar:
+            return await context.send(content="This guild has no automatic reactions.")
         string = ""
         for word, emoji in ar.items():
             try:
