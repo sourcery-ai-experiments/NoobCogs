@@ -1,4 +1,4 @@
-import asyncio
+import contextlib
 import discord
 import noobutils as nu
 import re
@@ -47,7 +47,6 @@ class AutomaticReaction(nu.Cog):
 
     @commands.Cog.listener(name="on_message")
     async def auto_reaction_listener(self, message: discord.Message):
-        await asyncio.sleep(1.5)
         if (
             not message.guild
             or await self.bot.cog_disabled_in_guild(self, message.guild)
@@ -60,27 +59,8 @@ class AutomaticReaction(nu.Cog):
         ar = await self.config.guild(message.guild).autoreactions()
         for word, emoji in ar.items():
             if self.contains_word(message.content, word):
-                await message.add_reaction(emoji)
-
-    @commands.Cog.listener(name="on_guild_emojis_update")
-    async def remove_ar_on_emoji_removal(
-        self,
-        guild: discord.Guild,
-        before: Sequence[discord.Emoji],
-        after: Sequence[discord.Emoji],
-    ):
-        removed_emojis = set(before) - set(after)
-
-        if removed_emojis:
-            to_set = []
-            ar = await self.config.guild(guild).autoreactions()
-            for emoji in removed_emojis:
-                for word, _emoji in ar.items():
-                    if str(emoji) == _emoji:
-                        to_set.append(1)
-                        ar.pop(word)
-            if to_set:
-                await self.config.guild(guild).autoreactions.set(ar)
+                with contextlib.suppress(discord.errors.HTTPException):
+                    await message.add_reaction(emoji)
 
     @commands.group(name="automaticreaction", aliases=["autoreact"])
     @commands.bot_has_permissions(embed_links=True)
@@ -92,6 +72,7 @@ class AutomaticReaction(nu.Cog):
         pass
 
     @automaticreaction.command(name="add")
+    @commands.bot_has_permissions(add_reactions=True)
     async def automaticreaction_add(
         self, context: commands.Context, emoji: nu.NoobEmojiConverter, *, word: str
     ):
@@ -151,6 +132,27 @@ class AutomaticReaction(nu.Cog):
             embed_thumbnail=nu.is_have_avatar(context.guild),
         )
         await nu.NoobPaginator(pagified).start(context)
+
+    @automaticreaction.command(name="clearremoved")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def automaticreaction_clearremoved(self, context: commands.Context):
+        """
+        Clear all the emojis that are no longer available.
+        """
+        async with context.typing():
+            ar = await self.config.guild(context.guild).autoreactions()
+            for word, emoji in ar.items():
+                try:
+                    e = await nu.NoobEmojiConverter().convert(context, emoji)
+                    available = getattr(e, "available", True)
+                    if available is False:
+                        ar.pop(word)
+                except commands.BadArgument:
+                    ar.pop(word)
+            await self.config.guild(context.guild).set(ar)
+            await context.send(
+                content="Successfully cleared all the unavailable emojis from automatic reactions."
+            )
 
     @automaticreaction.command(name="resetguild")
     @commands.admin_or_permissions(manage_guild=True)
